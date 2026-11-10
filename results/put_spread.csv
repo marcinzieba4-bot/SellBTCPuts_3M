@@ -1,0 +1,29 @@
+variant,sizing,CAGR,max DD %,max DD date,total P&L $,worst trade $,win rate,P&L 1st half $,P&L 2nd half $,max size,green-trade P&L @0.25 $
+playbook (no wing),fixed 0.25,0.0256,-0.0206,2024-04-18,3816,-249,0.7931,1855,1962,0.2500,4044
+playbook (no wing),recovery rule,0.0294,-0.0205,2024-04-18,4415,-249,0.7931,2061,2354,0.4800,4044
+A: 15% OTM wing on GREEN trades only (+delta on RED),fixed 0.25,0.0090,-0.0141,2022-06-24,1298,-249,0.7586,435,863,0.2500,1526
+A: 15% OTM wing on GREEN trades only (+delta on RED),recovery rule,0.0129,-0.0159,2022-04-25,1870,-299,0.7586,623,1247,0.5500,1526
+B: 15% OTM wing on ALL trades (+delta on RED),fixed 0.25,0.0087,-0.0121,2024-04-18,1258,-139,0.6552,520,738,0.2500,1526
+B: 15% OTM wing on ALL trades (+delta on RED),recovery rule,0.0110,-0.0159,2022-04-25,1596,-139,0.6552,665,931,0.9900,1526
+"C: 15% OTM wing on ALL trades, no delta hedge",fixed 0.25,0.0166,-0.0119,2024-04-18,2427,-200,0.9310,1022,1405,0.2500,1526
+"C: 15% OTM wing on ALL trades, no delta hedge",recovery rule,0.0181,-0.0120,2022-07-02,2652,-200,0.9310,1247,1405,0.8700,1526
+A: 20% OTM wing on GREEN trades only (+delta on RED),fixed 0.25,0.0164,-0.0170,2024-04-18,2395,-249,0.7931,1024,1371,0.2500,2623
+A: 20% OTM wing on GREEN trades only (+delta on RED),recovery rule,0.0201,-0.0176,2024-10-03,2968,-249,0.7931,1207,1762,0.4800,2623
+B: 20% OTM wing on ALL trades (+delta on RED),fixed 0.25,0.0157,-0.0171,2024-04-18,2297,-160,0.7586,1027,1270,0.2500,2623
+B: 20% OTM wing on ALL trades (+delta on RED),recovery rule,0.0185,-0.0201,2022-04-18,2723,-160,0.7586,1181,1542,0.4700,2623
+"C: 20% OTM wing on ALL trades, no delta hedge",fixed 0.25,0.0255,-0.0170,2022-07-02,3801,-403,0.9655,1688,2114,0.2500,2623
+"C: 20% OTM wing on ALL trades, no delta hedge",recovery rule,0.0281,-0.0211,2022-07-02,4207,-403,0.9655,2093,2114,0.9400,2623
+A: 25% OTM wing on GREEN trades only (+delta on RED),fixed 0.25,0.0197,-0.0199,2024-04-18,2905,-249,0.7931,1320,1585,0.2500,3133
+A: 25% OTM wing on GREEN trades only (+delta on RED),recovery rule,0.0235,-0.0198,2024-04-18,3482,-249,0.7931,1504,1977,0.4800,3133
+B: 25% OTM wing on ALL trades (+delta on RED),fixed 0.25,0.0172,-0.0201,2024-04-18,2530,-285,0.7586,1069,1460,0.2500,3133
+B: 25% OTM wing on ALL trades (+delta on RED),recovery rule,0.0218,-0.0210,2024-10-03,3219,-285,0.7586,1376,1843,0.6800,3133
+"C: 25% OTM wing on ALL trades, no delta hedge",fixed 0.25,0.0278,-0.0429,2022-06-19,4155,-1063,0.9655,1569,2586,0.2500,3133
+"C: 25% OTM wing on ALL trades, no delta hedge",recovery rule,0.0345,-0.0595,2022-07-02,5222,-1063,0.9655,2636,2586,1.8300,3133
+A: 30% OTM wing on GREEN trades only (+delta on RED),fixed 0.25,0.0217,-0.0205,2024-04-18,3211,-249,0.7931,1515,1696,0.2500,3439
+A: 30% OTM wing on GREEN trades only (+delta on RED),recovery rule,0.0255,-0.0204,2024-04-18,3804,-249,0.7931,1712,2092,0.4800,3439
+B: 30% OTM wing on ALL trades (+delta on RED),fixed 0.25,0.0194,-0.0207,2024-04-18,2863,-285,0.7586,1286,1577,0.2500,3439
+B: 30% OTM wing on ALL trades (+delta on RED),recovery rule,0.0239,-0.0213,2024-10-03,3554,-285,0.7586,1585,1969,0.6100,3439
+"C: 30% OTM wing on ALL trades, no delta hedge",fixed 0.25,0.0316,-0.0430,2022-07-02,4763,-1063,0.9655,1887,2876,0.2500,3439
+"C: 30% OTM wing on ALL trades, no delta hedge",recovery rule,0.0382,-0.0592,2022-07-02,5831,-1063,0.9655,2955,2876,1.5700,3439
+"naked, no hedge at all (Part 5)",fixed 0.25,0.0403,-0.0608,2022-06-19,6167,-993,0.9655,2664,3503,0.2500,4044
+"naked, no hedge at all (Part 5)",recovery rule,0.0463,-0.0608,2022-06-19,7171,-993,0.9655,3668,3503,1.0700,4044

@@ -586,6 +586,63 @@ Trade list: [`results/playbook_monthly_delta_trades.csv`](results/playbook_month
 
 **What to do instead.** Keep the playbook as it is: hedge only after a RED candle, and leave green-candle trades unhedged. The remaining risk is a crash *after* a green month, which never happened in 2022–2026. Better protection for that is a **put spread**: buy a further-OTM put, e.g. 20% OTM, against the 10% OTM one you sell. It caps the loss without whipsaw. That was not tested here.
 
+### Playbook extension 2: protective put (put spread) instead of, or with, the delta hedge (`put_spread.py`)
+
+**Setup.** Same 29 monthly trades: sell the **10% OTM** put after a big candle. Against it, **buy a further-OTM put** with the same expiry (the "wing", at 15%, 20%, 25% or 30% OTM) at its real Deribit price. This caps the loss per trade at `(sold strike − bought strike) − net premium`.
+* Option fees are charged on both legs (no combo discount assumed).
+* Variants:
+  * **A:** wing only on green-candle trades; red-candle trades stay naked with the daily delta hedge (as in the playbook).
+  * **B:** wing on all trades, and red-candle trades also delta-hedge the spread.
+  * **C:** wing on all trades, **no delta hedging at all**.
+
+CAGR / max DD / total P&L on the $30k account:
+
+| Variant | Wing | Fixed 0.25 | Recovery rule (max size) |
+|---|---|---:|---:|
+| Playbook (no wing; delta hedge after RED) | – | +2.6% / −2.1% / $3,816 | +2.9% / −2.1% (0.5) |
+| A: wing on green only, delta on red | 15% / 20% / 25% / 30% | +0.9% / +1.6% / +2.0% / +2.2%, DD −1.4% … −2.1% | +1.3% … +2.6% |
+| B: wing on all, delta on red | 15% / 20% / 25% / 30% | +0.9% / +1.6% / +1.7% / +1.9%, DD −1.2% … −2.1% | +1.1% … +2.4% |
+| C: wing on all, no delta hedge | 15% | +1.7% / −1.2% / $2,427 | +1.8% / −1.2% (0.9) |
+| **C: wing on all, no delta hedge** | **20%** | **+2.6% / −1.7% / $3,801** | **+2.8% / −2.1% (0.9)** |
+| C: wing on all, no delta hedge | 25% | +2.8% / −4.3% / $4,155 | +3.4% / −5.9% (1.8) |
+| C: wing on all, no delta hedge | 30% | +3.2% / −4.3% / $4,763 | +3.8% / −5.9% (1.6) |
+| Naked, no hedge at all (Part 5) | – | +4.0% / −6.1% / $6,167 | +4.6% / −6.1% (1.1) |
+
+**Cost of the wing** (green-candle trades, average per lot): the 10% OTM put sold for **$1,092**. Buying back the 15% / 20% / 25% / 30% OTM put cost **$613 / $338 / $212 / $137** (56% / 31% / 19% / 13% of the premium).
+
+**Crash stress test.** The backtest had no crash after a green month, so the insurance never paid out. This is the loss per green-candle trade at 0.25 lots if BTC had instead fallen **28%** by expiry (the worst month in the sample):
+
+| | naked | 15% wing | 20% wing | 25% wing | 30% wing |
+|---|---:|---:|---:|---:|---:|
+| average loss | −$2,305 | −$592 | **−$1,289** | −$1,944 | −$2,343 |
+| worst case | −$4,504 | −$1,103 | **−$2,507** | −$3,974 | −$4,542 |
+
+Full detail per trade: [`results/put_spread_stress.csv`](results/put_spread_stress.csv). All variants: [`results/put_spread.csv`](results/put_spread.csv).
+
+**Result**
+* **Best: variant C with a 20% wing.** Sell the 10% OTM put and buy the 20% OTM put after every big candle, with no delta hedging.
+  * Return: **the same +2.6% a year** as the playbook.
+  * Drawdown: **smaller (−1.7% vs −2.1%)**.
+  * Win rate: 97%. Both halves positive ($1,688 / $2,114).
+  * The loss per trade is **capped** (about 10% of spot minus the net credit, e.g. about $1.8k at 0.25 lots with BTC at $78k). In a −28% crash it would have lost about half as much as the naked put.
+  * **No daily delta hedging is needed.**
+* **The 15% wing protects best in a crash but costs more than half the premium,** so return drops to +1.7% a year.
+* **25–30% wings are too far away:** in a −28% month they barely help, and drawdown rises to −4.3%.
+* **Adding the wing on top of the delta hedge (A, B) only lowers return.** The delta hedge already protects red-candle trades, and green-candle trades never lost.
+
+### Updated instructions (recommended version)
+1. **When:** the last Friday of the month, after 08:00 UTC (Deribit monthly expiry).
+2. **Measure the move:** BTC delivery price ÷ the previous monthly expiry's delivery price − 1.
+3. **Decide:** if `|move| > 10%`, open the spread. Otherwise do nothing this month.
+4. **Open the spread** (one order, same expiry = next monthly expiry):
+   * **Sell** the put with strike nearest **0.90 × price**.
+   * **Buy** the put with strike nearest **0.80 × price**.
+   * Size **0.25 BTC** per leg (0.2 or 0.3 on Deribit). Optional recovery: `0.25 + unrecovered loss ÷ net credit per BTC`, capped at 1 BTC.
+5. **No daily hedging.** Hold to expiry; both legs settle automatically.
+6. **Max risk per trade** = (sold strike − bought strike − net credit) × size. Keep at least that in the account. That is about $2k per 0.25 BTC at a BTC price of $78k, far less collateral than a naked put.
+
+**Next decision: Friday 27 Nov 2026, 08:00 UTC.** Open the spread only if the delivery price is **below 70,307** or **above 85,931**. Example: at a price of 86,000, sell the ~77,000 put and buy the ~69,000 put.
+
 ## Reproduce
 
 ```bash
@@ -600,6 +657,7 @@ python3 candle_patterns.py   # Part 5: last-candle patterns, filter rules, permu
 python3 candle_combo.py prefetch && python3 candle_combo.py && python3 candle_combo.py detail   # Part 6
 python3 playbook_monthly_delta.py   # Playbook: monthly big-candle puts + delta hedge, ATM vs 10% OTM
 python3 green_activation.py         # Playbook extension: hedge green-candle trades after an X% drop?
+python3 put_spread.py               # Playbook extension 2: protective put / put spread + crash stress
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
