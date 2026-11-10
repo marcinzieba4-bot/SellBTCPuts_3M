@@ -1,0 +1,37 @@
+strike,variant,sizing,CAGR,max DD %,max DD date,total P&L $,max size,P&L 1st half $,P&L 2nd half $,green trades,green trades hedged,green trades P&L @0.25 $,green losing trades
+10% OTM,green: no hedge (playbook),fixed 0.25,0.0256,-0.0206,2024-04-18,3816,0.2500,1855,1962,16,0,4044,0
+10% OTM,green: no hedge (playbook),recovery rule,0.0294,-0.0205,2024-04-18,4415,0.4800,2061,2354,16,0,4044,0
+10% OTM,green: daily delta from day 1,fixed 0.25,0.0110,-0.0109,2022-06-24,1587,0.2500,626,962,16,16,1815,2
+10% OTM,green: daily delta from day 1,recovery rule,0.0144,-0.0119,2024-09-06,2095,0.4800,927,1168,16,16,1815,2
+10% OTM,green: delta hedge activated at -2%,fixed 0.25,0.0128,-0.0122,2025-03-11,1860,0.2500,1045,815,16,13,2088,3
+10% OTM,green: delta hedge activated at -2%,recovery rule,0.0163,-0.0118,2024-09-06,2392,0.4800,1293,1099,16,13,2088,3
+10% OTM,green: delta hedge activated at -4%,fixed 0.25,0.0103,-0.0211,2025-03-11,1494,0.2500,958,536,16,11,1722,5
+10% OTM,green: delta hedge activated at -4%,recovery rule,0.0156,-0.0321,2025-03-11,2286,0.6400,1194,1092,16,11,1722,5
+10% OTM,green: delta hedge activated at -6%,fixed 0.25,0.0110,-0.0306,2025-03-11,1594,0.2500,1024,570,16,10,1822,3
+10% OTM,green: delta hedge activated at -6%,recovery rule,0.0186,-0.0614,2025-03-11,2739,1.1800,1239,1500,16,10,1822,3
+10% OTM,green: delta hedge activated at -8%,fixed 0.25,0.0183,-0.0247,2024-10-02,2684,0.2500,1225,1458,16,5,2912,1
+10% OTM,green: delta hedge activated at -8%,recovery rule,0.0235,-0.0295,2024-10-02,3491,0.5500,1388,2104,16,5,2912,1
+10% OTM,green: delta hedge activated at -10%,fixed 0.25,0.0158,-0.0298,2024-10-12,2305,0.2500,958,1348,16,4,2533,2
+10% OTM,green: delta hedge activated at -10%,recovery rule,0.0219,-0.0345,2024-10-12,3240,0.7100,1136,2105,16,4,2533,2
+10% OTM,green: delta hedge activated at -12%,fixed 0.25,0.0175,-0.0338,2024-10-03,2561,0.2500,599,1962,16,3,2789,2
+10% OTM,green: delta hedge activated at -12%,recovery rule,0.0228,-0.0541,2024-10-03,3374,0.9000,613,2761,16,3,2789,2
+10% OTM,green: delta hedge activated at -15%,fixed 0.25,0.0256,-0.0206,2024-04-18,3816,0.2500,1855,1962,16,0,4044,0
+10% OTM,green: delta hedge activated at -15%,recovery rule,0.0294,-0.0205,2024-04-18,4415,0.4800,2061,2354,16,0,4044,0
+ATM,green: no hedge (playbook),fixed 0.25,0.0405,-0.0480,2024-04-18,6210,0.2500,908,5302,16,0,6698,5
+ATM,green: no hedge (playbook),recovery rule,0.0512,-0.0810,2022-08-22,8000,2.1600,1904,6096,16,0,6698,5
+ATM,green: daily delta from day 1,fixed 0.25,0.0110,-0.0222,2022-06-24,1589,0.2500,-274,1863,16,16,2077,3
+ATM,green: daily delta from day 1,recovery rule,0.0152,-0.0241,2022-06-24,2227,0.5700,182,2045,16,16,2077,3
+ATM,green: delta hedge activated at -2%,fixed 0.25,0.0170,-0.0214,2022-06-24,2497,0.2500,699,1798,16,13,2985,4
+ATM,green: delta hedge activated at -2%,recovery rule,0.0228,-0.0271,2022-06-24,3378,0.6700,1200,2178,16,13,2985,4
+ATM,green: delta hedge activated at -4%,fixed 0.25,0.0113,-0.0437,2025-03-11,1637,0.2500,871,766,16,11,2126,9
+ATM,green: delta hedge activated at -4%,recovery rule,0.0215,-0.0501,2025-03-11,3179,1.0100,1745,1434,16,11,2126,9
+ATM,green: delta hedge activated at -6%,fixed 0.25,0.0089,-0.0578,2025-03-11,1291,0.2500,400,891,16,10,1779,10
+ATM,green: delta hedge activated at -6%,recovery rule,0.0290,-0.0990,2025-03-11,4346,1.4500,1469,2878,16,10,1779,10
+ATM,green: delta hedge activated at -8%,fixed 0.25,0.0318,-0.0588,2024-10-02,4786,0.2500,612,4173,16,5,5274,7
+ATM,green: delta hedge activated at -8%,recovery rule,0.0468,-0.0767,2024-10-02,7253,1.7100,1630,5623,16,5,5274,7
+ATM,green: delta hedge activated at -10%,fixed 0.25,0.0284,-0.0718,2024-10-12,4250,0.2500,326,3925,16,4,4739,6
+ATM,green: delta hedge activated at -10%,recovery rule,0.0469,-0.1080,2024-10-12,7271,2.4700,1255,6015,16,4,4739,6
+ATM,green: delta hedge activated at -12%,fixed 0.25,0.0334,-0.0730,2024-10-03,5045,0.2500,-258,5302,16,3,5533,5
+ATM,green: delta hedge activated at -12%,recovery rule,0.0512,-0.1242,2022-09-28,8004,3.3800,802,7202,16,3,5533,5
+ATM,green: delta hedge activated at -15%,fixed 0.25,0.0405,-0.0480,2024-04-18,6210,0.2500,908,5302,16,0,6698,5
+ATM,green: delta hedge activated at -15%,recovery rule,0.0512,-0.0810,2022-08-22,8000,2.1600,1904,6096,16,0,6698,5

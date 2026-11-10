@@ -550,6 +550,42 @@ Trade list: [`results/playbook_monthly_delta_trades.csv`](results/playbook_month
 * At the 30 Oct 2026 expiry the October candle was 78,119 vs 83,931 (−6.9%), a small candle. So **no put this month**.
 * **Next decision: Friday 27 Nov 2026, 08:00 UTC.** Sell a put only if the delivery price is **below 70,307** (−10%, red: also delta-hedge) or **above 85,931** (+10%, green: no hedge). In between, skip.
 
+### Playbook extension: delta-hedge the GREEN-candle trades only if BTC falls? (`green_activation.py`)
+
+**Question.** In the playbook (monthly, sell a put after a big candle, daily delta hedge only after a RED candle), trades after a big **green** candle are unhedged. Should a daily delta hedge switch on if BTC drops X% below the entry price during the month? Once on, it stays on until expiry.
+* Activation is detected on 1-minute bars.
+* Levels tested: −2% … −15%.
+* There are 16 green-candle trades out of 29. Red-candle trades are always delta-hedged from day 1.
+
+**10% OTM** (main), CAGR / max DD on the $30k account:
+
+| Hedge rule for GREEN-candle trades | Fixed 0.25 | Total P&L | Green trades hedged | Green-trade P&L | Recovery rule |
+|---|---:|---:|---:|---:|---:|
+| **no hedge (playbook)** | **+2.6% / −2.1%** | **$3,816** | 0 / 16 | **$4,044** | +2.9% / −2.1% |
+| daily delta from day 1 | +1.1% / −1.1% | $1,587 | 16 | $1,815 | +1.4% / −1.2% |
+| activate at −2% | +1.3% / −1.2% | $1,860 | 13 | $2,088 | +1.6% / −1.2% |
+| activate at −4% | +1.0% / −2.1% | $1,494 | 11 | $1,722 | +1.6% / −3.2% |
+| activate at −6% | +1.1% / −3.1% | $1,594 | 10 | $1,822 | +1.9% / −6.1% |
+| activate at −8% | +1.8% / −2.5% | $2,684 | 5 | $2,912 | +2.4% / −2.9% |
+| activate at −10% | +1.6% / −3.0% | $2,305 | 4 | $2,533 | +2.2% / −3.4% |
+| activate at −12% | +1.7% / −3.4% | $2,561 | 3 | $2,789 | +2.3% / −5.4% |
+| activate at −15% | never triggered = playbook | | 0 | | |
+
+**ATM** (robustness check), fixed 0.25:
+* playbook: **+4.1% / −4.8%**
+* daily delta from day 1: +1.1% / −2.2%
+* activation at −2% / −4% / −6% / −8% / −10% / −12%: +1.7% / −2.1%, +1.1% / −4.4%, +0.9% / −5.8%, +3.2% / −5.9%, +2.8% / −7.2%, +3.3% / −7.3%
+
+**Result: it does not work.**
+* No activation level beat the playbook. Every level from −4% to −12% has **lower return and equal or larger drawdown**.
+* The only level that cut drawdown (−2%) also halved the return. Simply trading half the size gives the same result (about +1.3% / −1.05%), so the activation adds nothing.
+* **Why:** after a big green month, dips during the next month were bought back in this sample. **All 16** green-candle 10% OTM puts expired profitable unhedged. A hedge switched on after a drop sells BTC near the low and loses on the rebound, turning winners into losers:
+  * **Sep 2024** (after +10%): BTC dipped about −10%, then finished +3%. Unhedged: **+$249**. Activated at −8%: **−$254**.
+  * **Mar 2024** (after +37%): BTC dipped −14%, then finished −8%. Unhedged: **+$582**. At −10%: +$37. At −12%: −$184.
+* Per-trade detail: [`results/green_activation_trades.csv`](results/green_activation_trades.csv). All variants: [`results/green_activation.csv`](results/green_activation.csv).
+
+**What to do instead.** Keep the playbook as it is: hedge only after a RED candle, and leave green-candle trades unhedged. The remaining risk is a crash *after* a green month, which never happened in 2022–2026. Better protection for that is a **put spread**: buy a further-OTM put, e.g. 20% OTM, against the 10% OTM one you sell. It caps the loss without whipsaw. That was not tested here.
+
 ## Reproduce
 
 ```bash
@@ -563,6 +599,7 @@ python3 report_spread.py     # bid/ask sensitivity (1 tick below mark)
 python3 candle_patterns.py   # Part 5: last-candle patterns, filter rules, permutation tests
 python3 candle_combo.py prefetch && python3 candle_combo.py && python3 candle_combo.py detail   # Part 6
 python3 playbook_monthly_delta.py   # Playbook: monthly big-candle puts + delta hedge, ATM vs 10% OTM
+python3 green_activation.py         # Playbook extension: hedge green-candle trades after an X% drop?
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
