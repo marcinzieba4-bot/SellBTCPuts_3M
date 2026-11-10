@@ -248,15 +248,79 @@ To turn them into % returns, every variant is put on the **same $30,000 account*
 
 All variants: [`results/cagr_summary.csv`](results/cagr_summary.csv) and [`results/yearly_returns.csv`](results/yearly_returns.csv).
 
+## Part 4: weekly puts (1W)
+
+**Setup.** Every Friday at 08:00 UTC (Deribit weekly expiry), sell the put expiring the next Friday, then repeat.
+
+* That is 253 settled weeks, plus the open 13-Nov-26 put.
+* Same premiums source (real Deribit mark prices of the actual weekly puts), fees, strikes, recovery rule, hedges and $30k account as Parts 2–3.
+* Weekly strikes were close to target: on average 0% / 5.0% / 9.9% / 14.9% OTM.
+* The equity charts in Part 2 now have a 1W row.
+
+**Total P&L / CAGR / max drawdown on the $30k account, 31 Dec 2021 – 10 Nov 2026**
+
+Fixed 0.25 lots:
+
+| Strike | 1W no hedge | **1W full hedge at −10%, hold** | 1W delta hedge daily | 1M no hedge | 3M no hedge |
+|---|---:|---:|---:|---:|---:|
+| ATM | $3,873 / +2.5% / −25.9% | **$4,303 / +2.8% / −18.0%** | $756 / +0.5% / −6.5% | $1,500 / +1.0% / −20.2% | −$997 / −0.7% / −25.4% |
+| 5% OTM | $3,109 / +2.1% / −17.6% | **$3,540 / +2.3% / −10.1%** | $2,201 / +1.5% / −6.6% | $634 / +0.4% / −15.8% | $838 / +0.6% / −21.1% |
+| 10% OTM | $1,298 / +0.9% / −11.2% | $1,728 / +1.2% / −10.0% | −$318 / −0.2% / −5.7% | $1,227 / +0.8% / −13.2% | $1,696 / +1.1% / −16.9% |
+| 15% OTM | −$202 / −0.1% / −7.8% | $228 / +0.2% / −16.2% | −$878 / −0.6% / −5.6% | $1,625 / +1.1% / −10.0% | $3,294 / +2.2% / −12.8% |
+
+Your recovery rule (0.25 lots + size up to cover losses), with the largest leverage reached (notional ÷ account equity):
+
+| Strike | 1W no hedge | 1W full hedge at −10%, hold | 1W delta hedge daily | 1M no hedge |
+|---|---:|---:|---:|---:|
+| ATM | $52,420 / +23.1% / **−69.0%**, 49× | $52,122 / +23.0% / −40.7%, 24× | $6,576 / +4.2% / −18.6%, 7× | $24,478 / +13.1% / −61.4%, 10× |
+| 5% OTM | $26,137 / +13.8% / **−76.8%**, 112× | $24,794 / +13.2% / −26.3%, 10× | $11,551 / +6.9% / −16.3%, 13× | $18,588 / +10.4% / −44.1%, 6× |
+| 10% OTM | $10,983 / +6.6% / −12.2%, 9× | $11,040 / +6.7% / −7.6%, 8× | $6,795 / +4.3% / −18.5%, 61× | $12,872 / +7.6% / −38.0%, 5× |
+| 15% OTM | $5,199 / +3.3% / −9.8%, 10× | $18,788 / +10.5% / −8.4%, 16× | $3,651 / +2.4% / −4.1%, 18× | $7,684 / +4.8% / −30.9%, 5× |
+
+**Bid/ask cost: weekly options are the most sensitive.** Premiums in the backtest are Deribit mark prices (about mid). Selling **1 tick below mark** every time (0.0005 BTC, or 0.0001 BTC for options under 0.005 BTC) would have cost the following at fixed 0.25 lots ([`results/spread_sensitivity.csv`](results/spread_sensitivity.csv)):
+
+| Tenor | 1 tick as % of a typical premium | P&L lost per 0.25 lot, ATM |
+|---|---:|---:|
+| 1W | 2–9% | about **−$1.9k**, roughly half the weekly ATM profit |
+| 1M | 1–4% | about −$0.4k |
+| 3M | 0.5–1.2% | about −$0.15k |
+
+**Calendar-year returns, weekly** (% of equity at the start of each year):
+
+| Variant | 2022 | 2023 | 2024 | 2025 | 2026 |
+|---|---:|---:|---:|---:|---:|
+| 1W ATM, fixed, no hedge | −8.9% | +8.0% | +18.2% | +1.2% | −4.0% |
+| 1W ATM, fixed, hedge at −10% hold | −13.2% | +8.4% | +10.6% | +4.7% | +5.0% |
+| 1W 5% OTM, fixed, hedge at −10% hold | −5.4% | +3.0% | +9.3% | −1.4% | +6.5% |
+| 1W ATM, your rule, no hedge | +18.2% | +15.3% | +31.1% | +36.4% | +12.7% |
+| 1W 5% OTM, your rule, delta daily | +5.2% | +2.3% | +11.1% | +10.4% | +5.0% |
+
+### What weekly adds
+
+1. **Weekly earns the most at ATM and 5% OTM, before spread costs.**
+   * Fixed 0.25 lots made +$3.1–3.9k, against +$0.6–1.5k for 1M and −$1.0k to +$0.8k for 3M.
+   * Losing weeks were 78/253 at ATM, 34 at 5% OTM, 11 at 10% OTM and 6 at 15% OTM.
+   * **After a 1-tick bid/ask cost about half of that edge is gone.** Weekly only works with good execution, such as limit orders at or near mid.
+   * At 15% OTM the premium is too small (about $94 per lot); it lost money even before spread costs.
+2. **For weekly, "full hedge at −10%, hold to expiry" helps** (it lost money for 1M/3M). A rebound has at most a few days, so the hedge rarely gets caught in a big rally.
+   * It cut the ATM drawdown from −25.9% to −18.0% and the 5% OTM drawdown from −17.6% to −10.1%, with slightly more profit.
+   * With your rule it also cut the ATM drawdown from −69% to −41%.
+3. **Daily delta hedging is weaker on weeklies than on 1M/3M.** One re-hedge a day is too slow for a 7-day option, whose delta moves fast near expiry.
+4. **Your rule on weeklies is the most extreme martingale in the test.** Weekly premiums are small, so recovering one bad week needs a huge size.
+   * In the week to 13 Feb 2026 it sold **17.4 lots ATM ($1.13M notional on a $30k account)** to recover a $50k deficit. It worked, but a second down week would have wiped out the account several times over.
+   * The 5% OTM version reached 112× leverage.
+   * The +23% CAGR therefore needs leverage no account should take. Fully funded, it is about 1% a year.
+
 ## Reproduce
 
 ```bash
 pip install pandas matplotlib scipy
 python3 backtest.py          # Part 1: downloads + caches Deribit data in ./data, writes ./results
 python3 report.py            # Part 1 chart + stress test
-python3 hedged_backtest.py   # Part 2: 1M/3M x hedges (downloads ~25 MB of 1-minute BTC bars once)
+python3 hedged_backtest.py   # Parts 2-4: 1W/1M/3M x hedges (downloads ~25 MB of 1-minute BTC bars once)
 python3 report_hedged.py     # Part 2 tables + charts
 python3 report_cagr.py       # Part 3: CAGR / max DD % / yearly returns on a $30k account
+python3 report_spread.py     # bid/ask sensitivity (1 tick below mark)
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
