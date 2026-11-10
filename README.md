@@ -386,6 +386,99 @@ The 29 big-candle months for 1M ATM:
 
 Data: [`results/candle_filter_strategies.csv`](results/candle_filter_strategies.csv), [`results/candle_bucket_stats.csv`](results/candle_bucket_stats.csv), [`results/candle_cycles.csv`](results/candle_cycles.csv).
 
+## Part 6: big-candle filter + hedges, and buying calls after a small candle (`candle_combo.py`)
+
+### A) Sell puts only after a big candle, with hedges
+
+Hedges as in Parts 2–4. "−10% → daily delta" = no hedge until BTC is 10% below entry, then delta-hedge daily (`delta@-10%`). "on RED only" = hedge only the trades taken after a big **red** candle; trades after a big green candle stay naked. CAGR / max drawdown on the $30k account, fixed 0.25 lots:
+
+| | always sell, no hedge | BIG, no hedge | BIG + −10% hedge (hold) | BIG + daily delta | BIG + −10% → daily delta | **BIG + −10% hedge, RED only** | **BIG + daily delta, RED only** | BIG + −10% → daily delta, RED only |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1W ATM | +2.5% / −25.9% | +5.4% / −15.1% | +4.8% / −10.4% | +0.4% / −4.5% | +4.7% / −10.5% | **+6.3% / −9.8%** | +4.9% / −6.9% | +6.3% / −9.8% |
+| 1W 5% OTM | +2.1% / −17.5% | +3.6% / −10.2% | +2.9% / −5.1% | +1.2% / −3.9% | +2.8% / −5.6% | **+4.5% / −4.7%** | +3.2% / −3.9% | +4.2% / −5.3% |
+| 1W 10% OTM | +0.9% / −11.2% | +1.7% / −7.2% | +0.9% / −6.0% | +0.7% / −2.5% | +0.9% / −3.7% | **+2.6% / −2.5%** | +1.6% / −2.4% | +2.0% / −2.8% |
+| 1W 15% OTM | −0.1% / −7.8% | +1.0% / −3.9% | +0.2% / −6.9% | +0.2% / −1.7% | +0.3% / −2.4% | **+2.0% / −2.7%** | +0.5% / −1.7% | +0.7% / −2.1% |
+| 1M ATM | +1.0% / −20.2% | **+7.4% / −9.2%** | +2.4% / −22.5% | +1.1% / −2.2% | +4.5% / −11.9% | +4.0% / −18.0% | +4.0% / −4.8% | +5.7% / −9.6% |
+| 1M 5% OTM | +0.4% / −15.8% | **+5.8% / −7.7%** | +0.4% / −23.1% | +1.2% / −1.8% | +3.5% / −8.1% | +2.1% / −17.8% | **+3.5% / −3.2%** | +4.6% / −6.0% |
+| 1M 10% OTM | +0.8% / −13.2% | +4.0% / −6.1% | −1.7% / −24.3% | +1.1% / −1.1% | +2.3% / −5.0% | +0.1% / −18.2% | **+2.6% / −2.1%** | +3.3% / −3.8% |
+| 1M 15% OTM | +1.1% / −10.0% | +2.4% / −5.4% | −3.8% / −26.6% | +0.7% / −1.1% | +1.4% / −3.0% | −1.8% / −18.9% | **+1.6% / −1.1%** | +2.0% / −2.2% |
+
+**What the hedges add to the filter**
+
+* **Hedge only the trades after a big RED candle.** That is where crash continuation happens (June 2022). After a big green candle a crash was rare, so hedging those trades only costs money.
+* **Weekly:** hedging with "−10% hedge, RED only" improved both return and drawdown.
+  * ATM: **+6.3% / −9.8%**, vs +5.4% / −15.1% unhedged-filtered and +2.5% / −25.9% always.
+  * 5% OTM: **+4.5% / −4.7%**.
+* **Monthly:** the plain filter without a hedge still had the highest CAGR (ATM +7.4%). "Daily delta, RED only" trades some return for a much lower drawdown:
+  * ATM: +4.0% / −4.8%.
+  * 5% OTM: +3.5% / −3.2%.
+  * 10% OTM: +2.6% / −2.1%.
+* **The −10% hedge held to expiry still hurts monthly puts** (−17% to −27% drawdowns), as in Part 2.
+* **With your recovery rule,** the safest combinations kept the size small:
+  * 1W ATM + daily delta on RED only: +9.0% / −14.3%, max 1.7 lots.
+  * 1M 5% OTM + daily delta on RED only: +4.0% / −3.6%, max 0.8 lots.
+  * Your rule combined with the −10% hold hedge on monthly puts still wiped out the account at 5–15% OTM.
+
+### B) Buying options after a SMALL candle
+
+Same real Deribit prices (calls downloaded for this test), fixed 0.25 lots per leg. The straddle is 0.25 ATM call + 0.25 ATM put.
+
+| Monthly (1M), bought only after a SMALL candle | avg P&L/trade, % spot | 1st / 2nd half | win rate | permutation p | CAGR / max DD | for comparison: bought every month |
+|---|---:|---:|---:|---:|---:|---:|
+| ATM call | +2.44% | +4.24% / +1.06% | 37% | 0.14 | +1.7% / −24.8% | +0.1% / −29.9% |
+| 5% OTM call | +2.52% | +4.01% / +1.37% | 33% | 0.050 | +2.7% / −17.1% | −0.6% / −25.5% |
+| 10% OTM call | +2.07% | +3.33% / +1.11% | 27% | 0.038 | +2.2% / −15.6% | −1.2% / −25.3% |
+| ATM put | +1.88% | +1.85% / +1.89% | 47% | 0.006 | +6.2% / −16.4% | −1.5% / −36.8% |
+| **ATM straddle** | **+4.31%** | **+6.10% / +2.95%** | 53% | **0.001** | **+7.6% / −19.3%** | −1.4% / −33.8% |
+
+* **Weekly:** buying after a small candle did **not** work. Calls averaged −0.14% per trade (ATM, p = 0.77), straddles −0.06%, and puts only +0.09%.
+* **After a BIG candle,** buying calls, puts or straddles lost money for both tenors (monthly straddle −3.5% per trade). That fits Part 5: after big moves, options are expensive.
+
+**Calls alone are a weaker bet than the straddle.** After a quiet month BTC broke out *in either direction*, so buying only calls catches half of it. The straddle captures both sides. It is the mirror image of Part 5: selling puts after a small candle lost −1.95% per trade, and buying them earned +1.88%.
+
+**Caveat on the straddle.** Long volatility makes money in rare big moves. The $12.8k straddle profit (0.25 lots) came mostly from three months:
+* Nov 2024: BTC +42%, straddle +30% of spot.
+* Feb 2025: BTC −24%, straddle +13%.
+* Aug 2026: BTC +25%, straddle +17%.
+
+Without those three trades the straddle leg made only $1.8k. The median straddle trade was +$145, and quiet stretches like Jul–Sep 2025 cost −6% to −8% of spot per month.
+
+### C) Always in the market: sell puts after a BIG candle, buy straddles after a SMALL candle
+
+| Strategy (fixed 0.25 lots, $30k account) | CAGR | max DD | total P&L |
+|---|---:|---:|---:|
+| 1M: sell ATM put after BIG + buy ATM call after SMALL | +8.5% | −19.9% | $14.6k |
+| 1M: sell 5% OTM put after BIG + buy 5% OTM call after SMALL | +7.8% | −13.5% | $13.2k |
+| **1M: sell ATM put after BIG + buy ATM straddle after SMALL** | **+13.2%** | **−15.9%** | **$24.9k** |
+| 1M: sell 5% OTM put after BIG + buy ATM straddle after SMALL | +11.9% | −16.7% | $22.0k |
+| 1M: same, ATM put with daily delta hedge on RED only | +10.6% | −17.2% | $19.1k |
+| 1W: sell ATM put (−10% hedge, RED only) after BIG + buy ATM straddle after SMALL | +4.5% | −20.4% | $7.1k |
+| *reference:* your rule, 1M ATM, always sell (Part 3) | +13.1% | −61.4% | needs up to 10× leverage |
+| *reference:* buy & hold BTC | +9.9% | −66.8% | |
+
+**The monthly put + straddle combination** (trade list in [`results/best_strategy_trades.csv`](results/best_strategy_trades.csv)):
+* Yearly: **2022 +3.7%, 2023 +15.9%, 2024 +23.4%, 2025 +5.1%, 2026 (to 10 Nov) +17.0%**.
+* Both legs were profitable in both halves of the sample.
+* It never uses more than 0.25 BTC of exposure, so it needs no leverage.
+* Its worst stretch was Jul–Nov 2025, when straddles bled in quiet months and then puts lost in the Nov 2025 drop.
+
+![Best strategy](results/best_strategy_equity.png)
+
+### How to use Part 6
+* **Monthly plan:** each monthly expiry, look at BTC's move since the last expiry.
+  * **Moved more than 10%, up or down:** sell an ATM (or 5% OTM) put.
+  * **Moved less than 10%:** buy an ATM straddle.
+  * In this backtest that made **+13.2% a year with a −15.9% max drawdown**, at 0.25 lots on $30k.
+* **Weekly plan:** only sell puts after a big (>5%) weekly candle, add the −10% hedge on trades after a red candle, and skip quiet weeks. Don't buy weekly options; they didn't pay.
+* **Don't buy only calls after a quiet month.** The straddle did better because the breakout can go either way.
+* **Be honest about the evidence.**
+  * This builds on a post-hoc pattern with only 59 monthly decisions.
+  * The straddle leg depends on a few big breakouts, and quiet periods bleed premium.
+  * Premiums are mid prices; buying pays the spread (about 1 tick ≈ 0.1% of spot per straddle on monthlies).
+  * Paper-trade it, or start well below 0.25 lots, before relying on it.
+
+Data: [`results/candle_combo_hedges.csv`](results/candle_combo_hedges.csv), [`results/candle_combo_long_options.csv`](results/candle_combo_long_options.csv), [`results/candle_combo_always_in.csv`](results/candle_combo_always_in.csv).
+
 ## Reproduce
 
 ```bash
@@ -397,6 +490,7 @@ python3 report_hedged.py     # Part 2 tables + charts
 python3 report_cagr.py       # Part 3: CAGR / max DD % / yearly returns on a $30k account
 python3 report_spread.py     # bid/ask sensitivity (1 tick below mark)
 python3 candle_patterns.py   # Part 5: last-candle patterns, filter rules, permutation tests
+python3 candle_combo.py prefetch && python3 candle_combo.py && python3 candle_combo.py detail   # Part 6
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.

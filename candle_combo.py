@@ -16,6 +16,7 @@ C) Always in the market: sell puts after a big candle + buy calls after a small 
 
 Run:  python3 candle_combo.py prefetch   (download call quotes once, ~15 min)
       python3 candle_combo.py            (all results)
+      python3 candle_combo.py detail     (best monthly combo: trades, yearly, chart)
 """
 from __future__ import annotations
 
@@ -207,19 +208,27 @@ def main() -> None:
                                "perm p-value": perm_p(pnl_pct, mask) if when != "always" else float("nan"),
                                **{f"fixed {k}": v for k, v in st.items()}})
         # ---- C) always in the market -----------------------------------------
-        for put_label, put_hedge, call_label in (("ATM", "none", "ATM"), ("5% OTM", "none", "ATM"),
-                                                 ("5% OTM", "none", "5% OTM"), ("ATM", "delta-daily", "ATM"),
-                                                 ("5% OTM", "stop-10% hold", "5% OTM")):
-            sel, sel_put = [], []
-            for t in t0s:
+        long_leg = {"ATM call": legs_by["buy ATM call"], "5% OTM call": legs_by["buy 5% OTM call"],
+                    "ATM straddle": legs_by["buy ATM straddle"]}
+        combos = [("ATM", "none", "ATM call"), ("5% OTM", "none", "5% OTM call"),
+                  ("ATM", "none", "ATM straddle"), ("5% OTM", "none", "ATM straddle"),
+                  ("ATM", "delta-daily RED only", "ATM straddle"), ("5% OTM", "delta-daily RED only", "ATM straddle"),
+                  ("ATM", "stop-10% hold RED only", "ATM straddle"), ("5% OTM", "stop-10% hold RED only", "ATM straddle")]
+        for put_label, put_hedge, long_label in combos:
+            sel, sel_put, sel_long = [], [], []
+            for i, t in enumerate(t0s):
                 if big[t]:
-                    sel.append(put_legs[(put_label, put_hedge, t)])
-                    sel_put.append(put_legs[(put_label, put_hedge, t)])
+                    h = put_hedge.replace(" RED only", "")
+                    leg = put_legs[(put_label, (h if red[t] else "none") if "RED only" in put_hedge else h, t)]
+                    sel.append(leg)
+                    sel_put.append(leg)
                 else:
-                    sel.append(call_legs[(call_label, t)])
-            rows_c.append({"tenor": tenor, "strategy": f"sell {put_label} put ({put_hedge}) after BIG + buy {call_label} call after SMALL",
+                    sel.append(long_leg[long_label][i])
+                    sel_long.append(long_leg[long_label][i])
+            rows_c.append({"tenor": tenor, "strategy": f"sell {put_label} put ({put_hedge}) after BIG + buy {long_label} after SMALL",
                            "trades": len(sel), **{f"fixed {k}": v for k, v in run(sel, "fixed").items()},
-                           "puts only: fixed CAGR": run(sel_put, "fixed")["CAGR"]})
+                           "puts part only: CAGR": run(sel_put, "fixed")["CAGR"],
+                           "long part only: CAGR": run(sel_long, "fixed")["CAGR"]})
     if prefetch:
         print("prefetch done")
         return
@@ -232,5 +241,74 @@ def main() -> None:
         print(f"\n### {name}\n" + df.round(3).to_string(index=False))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not (len(sys.argv) > 1 and sys.argv[1] == "detail"):
     main()
+
+
+def best_strategy_detail() -> None:
+    """Year-by-year, halves and trade list for the monthly 'sell ATM put after BIG +
+    buy ATM straddle after SMALL' strategy, plus an equity chart."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    inst_m, px = bt.load_instruments(), bt.load_delivery_prices()
+    perp, dvol, fund = hb.load_perp_1h(), hb.load_dvol_1h(), hb.load_funding_1h()
+    calls = calls_for(load_calls(), "1M")
+    m = hb.load_perp_1m()
+    pairs = hb.cycle_expiries(inst_m, "1M")
+    exps = [pd.Timestamp(e) for e in sorted(inst_m.expiry.unique())]
+    prev = {b: a for a, b in zip(exps[:-1], exps[1:])}
+    prev[exps[0]] = exps[0] - pd.Timedelta(days=28)
+    rows, legs = [], {"put": [], "straddle": [], "combo": [], "always put": []}
+    for t0, t1 in pairs:
+        r = candle(m, max(prev[t0], pd.Timestamp("2021-12-01")), t0)["ret"]
+        c, q, s0 = hb.pick_put(inst_m, px, t0, t1, 0.0)
+        put = hb.run_cycle(c, q, s0, t0, t1, px, perp, dvol, fund, "none")
+        cc, cq, _ = pick_call(calls, px, t0, t1, 0.0)
+        strad = combine([call_cycle(cc, cq, s0, t0, t1, px, perp, dvol), long_put_from_short(*put)])
+        legs["always put"].append(put)
+        is_big = abs(r) > BIG["1M"]
+        leg = put if is_big else strad
+        legs["put" if is_big else "straddle"].append(leg)
+        legs["combo"].append(leg)
+        rows.append({"entry": t0.date(), "last candle": r, "action": "sell ATM put" if is_big else "buy ATM straddle",
+                     "P&L per lot $": leg[0]["pnl_per_lot"], "P&L % spot": leg[0]["pnl_per_lot"] / s0,
+                     "P&L at 0.25 lots $": 0.25 * leg[0]["pnl_per_lot"], "settled": leg[0]["settled"]})
+    tl = pd.DataFrame(rows)
+    tl.to_csv(os.path.join(OUT, "best_strategy_trades.csv"), index=False, float_format="%.4f")
+    curves = {}
+    for name in ("always put", "put", "straddle", "combo"):
+        tr, eq = hb.simulate([c for c, _ in legs[name]], [p for _, p in legs[name]], "fixed")
+        curves[name] = ACCOUNT + eq[eq.index.hour == 8]
+    eq = curves["combo"]
+    yearly = eq.groupby(eq.index.year).last()
+    prev_y = pd.concat([pd.Series({2021: ACCOUNT}), yearly]).shift(1).loc[yearly.index]
+    print("\nyearly return, combo:", ((yearly / prev_y - 1) * 100).round(1).to_dict())
+    tl["half"] = np.where(pd.to_datetime(tl.entry) < SPLIT, "H1", "H2")
+    print(tl.groupby(["half", "action"])["P&L at 0.25 lots $"].agg(["count", "sum", "mean"]).round(0))
+    s = tl[tl.action == "buy ATM straddle"].sort_values("P&L at 0.25 lots $", ascending=False)
+    print("straddle trades: total", round(s["P&L at 0.25 lots $"].sum()), " top-3", s["P&L at 0.25 lots $"].head(3).round(0).tolist(),
+          " median", round(s["P&L at 0.25 lots $"].median()), " without top-3", round(s["P&L at 0.25 lots $"].iloc[3:].sum()))
+    p = tl[tl.action == "sell ATM put"].sort_values("P&L at 0.25 lots $", ascending=False)
+    print("put trades: total", round(p["P&L at 0.25 lots $"].sum()), " without top-3", round(p["P&L at 0.25 lots $"].iloc[3:].sum()))
+    INK2, GRID, SURF = "#52514e", "#e4e3df", "#fcfcfb"
+    fig, ax = plt.subplots(figsize=(11, 4.8))
+    for name, label, col, lw in (("always put", "always sell ATM put (baseline)", INK2, 1.4),
+                                 ("put", "sell ATM put only after BIG candle", "#2a78d6", 1.6),
+                                 ("straddle", "buy ATM straddle only after SMALL candle", "#eb6834", 1.6),
+                                 ("combo", "both: always in the market", "#1baf7a", 2.4)):
+        ax.plot(curves[name].index, curves[name] / 1000, color=col, lw=lw, label=label)
+    ax.axhline(ACCOUNT / 1000, color=INK2, lw=0.7)
+    ax.set_title("Monthly BTC options, 0.25 lots, \\$30k account equity (\\$k)", loc="left", fontweight="bold")
+    ax.legend(frameon=False, fontsize=9, labelcolor=INK2, loc="upper left")
+    ax.grid(axis="y", color=GRID, lw=0.7)
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    ax.tick_params(length=0, colors=INK2)
+    fig.patch.set_facecolor(SURF)
+    ax.set_facecolor(SURF)
+    fig.savefig(os.path.join(OUT, "best_strategy_equity.png"), dpi=150, bbox_inches="tight")
+    print("saved best_strategy_equity.png")
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "detail":
+    best_strategy_detail()
