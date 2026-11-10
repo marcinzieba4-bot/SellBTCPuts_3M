@@ -1,2 +1,4 @@
 __pycache__/
 *.pyc
+# 1-minute perp bars (~25 MB) are re-downloaded by hedged_backtest.py
+data/btc_perp_1m.npz
