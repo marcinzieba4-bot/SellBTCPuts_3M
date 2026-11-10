@@ -200,6 +200,54 @@ Full results: [`results/hedged_summary.csv`](results/hedged_summary.csv), every 
   * A one-day crash still hits the position, and it also loses when implied vol spikes.
   * The edge is small in dollars (about $150–500 a year per 0.25 lot), so execution costs matter.
 
+## Part 3: CAGR and max drawdown in % (`report_cagr.py`)
+
+**All P&L figures above are totals** for the whole backtest, 31 Dec 2021 – 10 Nov 2026 (4.86 years). They are in USD, not per month.
+
+To turn them into % returns, every variant is put on the **same $30,000 account**. That is enough to fully cash-secure 0.25 BTC puts even at the highest strike ($115k × 0.25 = $28.75k).
+
+* Equity = $30k + cumulative daily mark-to-market P&L.
+* Max DD % is measured from the running equity peak.
+* Idle cash earns 0% here. In a real account T-bills would add roughly 4% a year in 2023–2026.
+
+**CAGR / max drawdown on a $30k account**
+
+| Tenor | Strike | **Your rule**, no hedge | Your rule, delta hedge daily | Fixed 0.25, no hedge | Fixed 0.25, delta hedge daily |
+|---|---|---:|---:|---:|---:|
+| 1M | ATM | **+13.1% / −61.4%** | +1.5% / −8.7% | +1.0% / −20.2% | +0.9% / −4.8% |
+| 1M | 5% OTM | **+10.4% / −44.1%** | +2.2% / −6.5% | +0.4% / −15.8% | +1.1% / −4.0% |
+| 1M | 10% OTM | **+7.6% / −38.0%** | +2.2% / −5.3% | +0.8% / −13.2% | +1.0% / −3.9% |
+| 1M | 15% OTM | **+4.8% / −30.9%** | +1.5% / −7.9% | +1.1% / −10.0% | +0.5% / −4.4% |
+| 3M | ATM | **+6.5% / −43.4%** | +1.8% / −4.2% | −0.7% / −25.4% | +1.6% / −4.2% |
+| 3M | 5% OTM | **+5.8% / −40.4%** | +1.5% / −5.9% | +0.6% / −21.1% | +1.3% / −5.0% |
+| 3M | 10% OTM | **+5.4% / −33.3%** | +1.4% / −6.7% | +1.1% / −16.9% | +1.1% / −5.3% |
+| 3M | 15% OTM | **+5.1% / −22.5%** | +1.4% / −7.4% | +2.2% / −12.8% | +1.1% / −5.2% |
+| | **Buy & hold BTC** with the $30k | **+9.9% / −66.8%** | | | |
+
+**What the % view adds**
+
+* **Your rule's higher CAGR needs leverage.** On the $30k account, the 1M ATM version reached a notional of **10.3× equity** (5–8× for the other unhedged strikes). That only works on margin. If you instead fund the peak notional in full (up to $345k), the same profit is a CAGR of only **1–3%**.
+  * Its −61.4% max drawdown came in June 2022, when the account fell from about $31k to **$12.3k**.
+  * The −$31.4k drawdown in dollars came later, in Feb 2026, from a higher equity peak.
+* **With your rule, the stop hedges wiped out the $30k account** (equity went below zero) in 15 of 16 cases. The only survivor, 3M ATM with the hedge removed at −5%, still had an 84% drawdown. "Delta hedge after −10%" wiped it out at 1M ATM, 5% and 10% OTM. At fixed size, the stop hedges returned between +0.4% and −8.1% a year with drawdowns of 24–49%.
+* **Delta-hedged variants** earn about **1–2% a year with only a 4–9% max drawdown**, the smoothest equity curves in the test. To reach higher returns you would scale the size up, and the drawdown scales with it.
+* **Buy & hold BTC** did +9.9% a year but with a −66.8% drawdown (Nov 2022).
+
+**Calendar-year returns** (% of equity at the start of the year; 2026 runs to 10 Nov):
+
+| Variant | 2022 | 2023 | 2024 | 2025 | 2026 | CAGR | max DD |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1M ATM, your rule, no hedge | +8.4% | +8.9% | +17.4% | +19.2% | +9.9% | +13.1% | −61.4% |
+| 1M ATM, fixed, no hedge | −12.5% | +7.5% | +15.2% | +5.5% | −8.2% | +1.0% | −20.2% |
+| 1M 10% OTM, your rule, no hedge | +7.0% | +3.7% | +10.2% | +10.9% | +5.3% | +7.6% | −38.0% |
+| 1M 10% OTM, fixed, no hedge | −5.4% | +4.2% | +11.5% | −3.5% | −1.9% | +0.8% | −13.2% |
+| 3M 15% OTM, fixed, no hedge | −5.3% | +3.4% | +9.0% | +4.3% | −0.3% | +2.2% | −12.8% |
+| 1M 10% OTM, your rule, delta daily | +1.9% | +1.4% | +2.9% | +1.2% | +3.4% | +2.2% | −5.3% |
+| 3M ATM, fixed, delta daily | +1.6% | +0.6% | +4.3% | −0.1% | +1.5% | +1.6% | −4.2% |
+| Buy & hold BTC | −64.9% | +157.0% | +117.9% | −4.5% | −15.6% | +9.9% | −66.8% |
+
+All variants: [`results/cagr_summary.csv`](results/cagr_summary.csv) and [`results/yearly_returns.csv`](results/yearly_returns.csv).
+
 ## Reproduce
 
 ```bash
@@ -208,6 +256,7 @@ python3 backtest.py          # Part 1: downloads + caches Deribit data in ./data
 python3 report.py            # Part 1 chart + stress test
 python3 hedged_backtest.py   # Part 2: 1M/3M x hedges (downloads ~25 MB of 1-minute BTC bars once)
 python3 report_hedged.py     # Part 2 tables + charts
+python3 report_cagr.py       # Part 3: CAGR / max DD % / yearly returns on a $30k account
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
