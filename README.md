@@ -311,6 +311,81 @@ Your recovery rule (0.25 lots + size up to cover losses), with the largest lever
    * The 5% OTM version reached 112× leverage.
    * The +23% CAGR therefore needs leverage no account should take. Fully funded, it is about 1% a year.
 
+## Part 5: does the last candle predict the next put? (`candle_patterns.py`)
+
+**Setup.** For every put sale (1W and 1M, no hedge), look at the **last BTC candle before entry**: the previous week for weekly puts, the previous monthly cycle for monthly puts. For weekly puts, the last daily candle is checked too.
+
+* High/low come from 1-minute BTC-PERPETUAL bars.
+* Features: return and colour, size, range, wicks (e.g. hammer-like candles).
+* Outcome: P&L per lot as % of BTC price, so 2022 and 2025 are comparable.
+* Overfitting checks: every bucket is shown for **both halves** of the sample (2022-01..2024-06 vs 2024-07..2026-11), and filter rules get a **permutation test** against 20,000 random selections of the same number of trades.
+
+### What did not matter
+* **Colour alone (green vs red)** gave no reliable edge (permutation p ≈ 0.3–0.5).
+* **The last daily candle's colour** for weekly puts: p = 0.13–0.33.
+* **Hammer-like candles:** nothing.
+
+### The pattern that did: candle SIZE, in either direction
+
+**Average P&L per put sold, as % of BTC price.** "Big" = the last candle moved more than **5% (week)** or **10% (month)**, up or down.
+
+| | after BIG candle | after SMALL candle | big, 1st half / 2nd half | win rate big vs small | entry IV big vs small |
+|---|---:|---:|---:|---:|---:|
+| 1W ATM | **+0.84%** (93 trades) | −0.16% (161) | +0.91% / +0.75% | 75% vs 65% | 51% vs 43% |
+| 1W 5% OTM | **+0.54%** | −0.05% | +0.69% / +0.34% | 90% vs 85% | 55% vs 47% |
+| 1W 10% OTM | **+0.30%** | −0.01% | +0.49% / +0.05% | 98% vs 94% | 63% vs 55% |
+| 1W 15% OTM | **+0.19%** | −0.05% | +0.31% / +0.02% | 99% vs 97% | 72% vs 65% |
+| 1M ATM | **+2.85%** (29 trades) | **−1.95%** (30) | +1.96% / +4.31% | 79% vs 53% | 51% vs 45% |
+| 1M 5% OTM | **+2.27%** | −1.63% | +1.90% / +2.87% | 90% vs 57% | 53% vs 46% |
+| 1M 10% OTM | **+1.66%** | −0.85% | +1.69% / +1.62% | 97% vs 73% | 55% vs 49% |
+| 1M 15% OTM | **+0.98%** | −0.30% | +1.02% / +0.93% | 97% vs 73% | 59% vs 52% |
+
+**Why it plausibly works.** After a big move, in either direction, option sellers are paid more: entry implied vol is 6–9 points higher. BTC also tended to calm down after big moves. After a quiet candle, premiums are cheap and BTC often broke out of the range. That is the classic "sell volatility after it spikes, not when it is compressed".
+
+### As a trading rule: sell only after a big candle, skip after a small one
+
+$30k account, CAGR / max drawdown, with the number of trades taken:
+
+| | always sell (fixed 0.25) | **only after BIG candle (fixed 0.25)** | permutation p | only after BIG candle + **your recovery rule** |
+|---|---:|---:|---:|---:|
+| 1M ATM | +1.0% / −20.2% (59) | **+7.4% / −9.2%** (29) | 0.007 | +8.7% / −13.4%, max 1.5 lots |
+| 1M 5% OTM | +0.4% / −15.8% | **+5.8% / −7.7%** | 0.005 | +6.6% / −8.3%, max 1.2 lots |
+| 1M 10% OTM | +0.8% / −13.2% | **+4.0% / −6.1%** | 0.009 | +4.6% / −6.1%, max 1.1 lots |
+| 1M 15% OTM | +1.1% / −10.0% | +2.4% / −5.4% | 0.035 | +2.9% / −5.4%, max 1.2 lots |
+| 1W ATM | +2.5% / −25.9% (254) | **+5.4% / −15.1%** (93) | 0.025 | account wiped out |
+| 1W 5% OTM | +2.0% / −17.6% | +3.6% / −10.2% | 0.039 | account wiped out |
+| 1W 10% OTM | +0.9% / −11.2% | +1.7% / −7.2% | 0.072 | +3.5% / −7.4% |
+| 1W 15% OTM | −0.1% / −7.8% | +1.0% / −3.9% | 0.028 | +1.8% / −4.1% |
+
+For comparison, your recovery rule *without* the filter on 1M ATM was +13.1% / **−61.4%** with up to 6.9 lots (Part 3).
+
+**Robustness.** The result does not depend on the exact threshold ([`results/candle_threshold_sensitivity.csv`](results/candle_threshold_sensitivity.csv)). For 1M ATM, any threshold from 7.5% to 15% gives +4.2% to +7.4% CAGR, against +1.0% for always selling. Only 5% stops working, because then almost every month counts as "big". For 1W ATM, 4 of the 5 thresholds tested (3% to 8%) give +5.3% to +6.9%, against +2.5%. The exception is 4%, which gives +2.3%.
+
+The 29 big-candle months for 1M ATM:
+* 23 winners, mostly +4% to +7% of spot each.
+* 6 losers. Five were small (−1% to −3%).
+* The single large loss was **June 2022 (−20%)**. It followed a −27% May candle and BTC crashed again. A big red candle can be followed by more crash.
+
+![Candle patterns](results/candle_patterns.png)
+
+**Caveats**
+* The "big candle either way" rule was formed *after* looking at the bucket stats.
+* Across all rules, strikes and tenors about 90 combinations were tested, so a few p < 0.05 results are expected by chance.
+* What makes this more than noise:
+  * It holds at all 8 tenor/strike combinations and in both halves of the sample.
+  * It survives a range of thresholds.
+  * It has an economic reason (richer implied vol).
+  * It uses no look-ahead: the decision only needs the candle that has already closed at entry.
+* It is still only 29 monthly trades. Treat it as a strong hypothesis and paper-trade it before sizing up.
+
+### How to use it
+* **Before each sale, check the last candle.** If BTC moved more than about 10% over the past month (or 5% over the past week), up or down, sell the put. If the candle was small, skip the cycle and stay in cash.
+* **This filter makes your recovery rule much safer on monthly puts:** max 1–1.5 lots instead of 6.9, and drawdown −13% instead of −61%.
+* **Don't combine it with your recovery rule on weeklies.** That still wiped out the account at ATM and 5% OTM.
+* **After a big RED candle, the June-2022 type of crash continuation is the main risk.** A −10% stop hedge or a daily delta hedge (Parts 2–4) is a natural add-on for those trades. It was not tested together with this filter here.
+
+Data: [`results/candle_filter_strategies.csv`](results/candle_filter_strategies.csv), [`results/candle_bucket_stats.csv`](results/candle_bucket_stats.csv), [`results/candle_cycles.csv`](results/candle_cycles.csv).
+
 ## Reproduce
 
 ```bash
@@ -321,6 +396,7 @@ python3 hedged_backtest.py   # Parts 2-4: 1W/1M/3M x hedges (downloads ~25 MB of
 python3 report_hedged.py     # Part 2 tables + charts
 python3 report_cagr.py       # Part 3: CAGR / max DD % / yearly returns on a $30k account
 python3 report_spread.py     # bid/ask sensitivity (1 tick below mark)
+python3 candle_patterns.py   # Part 5: last-candle patterns, filter rules, permutation tests
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
