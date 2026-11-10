@@ -1,0 +1,101 @@
+strike,hedge,sizing,year,return
+ATM,no hedge,fixed 0.25 lots,2022,-0.0176
+ATM,no hedge,fixed 0.25 lots,2023,0.0703
+ATM,no hedge,fixed 0.25 lots,2024,0.1209
+ATM,no hedge,fixed 0.25 lots,2025,0.1137
+ATM,no hedge,fixed 0.25 lots,2026,0.0688
+ATM,no hedge,recovery rule,2022,0.0465
+ATM,no hedge,recovery rule,2023,0.0702
+ATM,no hedge,recovery rule,2024,0.1189
+ATM,no hedge,recovery rule,2025,0.1069
+ATM,no hedge,recovery rule,2026,0.0714
+ATM,"daily delta, all trades",fixed 0.25 lots,2022,-0.0089
+ATM,"daily delta, all trades",fixed 0.25 lots,2023,0.0068
+ATM,"daily delta, all trades",fixed 0.25 lots,2024,0.0149
+ATM,"daily delta, all trades",fixed 0.25 lots,2025,0.0227
+ATM,"daily delta, all trades",fixed 0.25 lots,2026,0.0167
+ATM,"daily delta, all trades",recovery rule,2022,0.0019
+ATM,"daily delta, all trades",recovery rule,2023,0.0087
+ATM,"daily delta, all trades",recovery rule,2024,0.0208
+ATM,"daily delta, all trades",recovery rule,2025,0.0241
+ATM,"daily delta, all trades",recovery rule,2026,0.0168
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,2022,-0.0313
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,2023,0.0526
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,2024,0.0747
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,2025,0.0714
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,2026,0.0280
+ATM,"daily delta, RED-candle trades only",recovery rule,2022,-0.0180
+ATM,"daily delta, RED-candle trades only",recovery rule,2023,0.0747
+ATM,"daily delta, RED-candle trades only",recovery rule,2024,0.0834
+ATM,"daily delta, RED-candle trades only",recovery rule,2025,0.0761
+ATM,"daily delta, RED-candle trades only",recovery rule,2026,0.0295
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,2022,-0.0204
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,2023,0.0705
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,2024,-0.0375
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,2025,0.1327
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,2026,0.0789
+ATM,"-10% then daily delta, all trades",recovery rule,2022,0.0259
+ATM,"-10% then daily delta, all trades",recovery rule,2023,0.0748
+ATM,"-10% then daily delta, all trades",recovery rule,2024,0.0428
+ATM,"-10% then daily delta, all trades",recovery rule,2025,0.1310
+ATM,"-10% then daily delta, all trades",recovery rule,2026,0.0762
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,2022,-0.0165
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,2023,0.0703
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,2024,0.0211
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,2025,0.1247
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,2026,0.0747
+ATM,"-10% then daily delta, RED only",recovery rule,2022,0.0263
+ATM,"-10% then daily delta, RED only",recovery rule,2023,0.0743
+ATM,"-10% then daily delta, RED only",recovery rule,2024,0.0796
+ATM,"-10% then daily delta, RED only",recovery rule,2025,0.1126
+ATM,"-10% then daily delta, RED only",recovery rule,2026,0.0748
+10% OTM,no hedge,fixed 0.25 lots,2022,0.0175
+10% OTM,no hedge,fixed 0.25 lots,2023,0.0294
+10% OTM,no hedge,fixed 0.25 lots,2024,0.0682
+10% OTM,no hedge,fixed 0.25 lots,2025,0.0438
+10% OTM,no hedge,fixed 0.25 lots,2026,0.0322
+10% OTM,no hedge,recovery rule,2022,0.0510
+10% OTM,no hedge,recovery rule,2023,0.0285
+10% OTM,no hedge,recovery rule,2024,0.0661
+10% OTM,no hedge,recovery rule,2025,0.0425
+10% OTM,no hedge,recovery rule,2026,0.0313
+10% OTM,"daily delta, all trades",fixed 0.25 lots,2022,0.0090
+10% OTM,"daily delta, all trades",fixed 0.25 lots,2023,0.0073
+10% OTM,"daily delta, all trades",fixed 0.25 lots,2024,0.0133
+10% OTM,"daily delta, all trades",fixed 0.25 lots,2025,0.0086
+10% OTM,"daily delta, all trades",fixed 0.25 lots,2026,0.0135
+10% OTM,"daily delta, all trades",recovery rule,2022,0.0150
+10% OTM,"daily delta, all trades",recovery rule,2023,0.0077
+10% OTM,"daily delta, all trades",recovery rule,2024,0.0204
+10% OTM,"daily delta, all trades",recovery rule,2025,0.0099
+10% OTM,"daily delta, all trades",recovery rule,2026,0.0150
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,2022,0.0096
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,2023,0.0239
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,2024,0.0502
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,2025,0.0198
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,2026,0.0182
+10% OTM,"daily delta, RED-candle trades only",recovery rule,2022,0.0161
+10% OTM,"daily delta, RED-candle trades only",recovery rule,2023,0.0241
+10% OTM,"daily delta, RED-candle trades only",recovery rule,2024,0.0552
+10% OTM,"daily delta, RED-candle trades only",recovery rule,2025,0.0233
+10% OTM,"daily delta, RED-candle trades only",recovery rule,2026,0.0209
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,2022,0.0065
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,2023,0.0298
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,2024,-0.0082
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,2025,0.0477
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,2026,0.0350
+10% OTM,"-10% then daily delta, all trades",recovery rule,2022,0.0205
+10% OTM,"-10% then daily delta, all trades",recovery rule,2023,0.0294
+10% OTM,"-10% then daily delta, all trades",recovery rule,2024,0.0297
+10% OTM,"-10% then daily delta, all trades",recovery rule,2025,0.0453
+10% OTM,"-10% then daily delta, all trades",recovery rule,2026,0.0333
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,2022,0.0183
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,2023,0.0294
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,2024,0.0287
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,2025,0.0455
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,2026,0.0334
+10% OTM,"-10% then daily delta, RED only",recovery rule,2022,0.0302
+10% OTM,"-10% then daily delta, RED only",recovery rule,2023,0.0291
+10% OTM,"-10% then daily delta, RED only",recovery rule,2024,0.0541
+10% OTM,"-10% then daily delta, RED only",recovery rule,2025,0.0439
+10% OTM,"-10% then daily delta, RED only",recovery rule,2026,0.0323

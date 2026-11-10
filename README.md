@@ -479,6 +479,77 @@ Without those three trades the straddle leg made only $1.8k. The median straddle
 
 Data: [`results/candle_combo_hedges.csv`](results/candle_combo_hedges.csv), [`results/candle_combo_long_options.csv`](results/candle_combo_long_options.csv), [`results/candle_combo_always_in.csv`](results/candle_combo_always_in.csv).
 
+## Playbook: monthly put after a big candle + delta hedge (ATM vs 10% OTM) (`playbook_monthly_delta.py`)
+
+**Sizing note.** Every number labelled **fixed** in Parts 5–6 is **without** recovery sizing: always 0.25 lots. The **recovery rule** column uses your rule: `size = 0.25 + unrecovered loss ÷ premium per lot`. Hedge P&L counts toward the loss to recover, and skipped months carry the deficit to the next big-candle month.
+
+29 trades (months after a big candle) out of 59 months, Jan 2022 – Nov 2026, $30k account. Each cell is CAGR / max DD / total P&L, plus max size for the recovery rule:
+
+| Strike | Hedge | Fixed 0.25 lots | Recovery rule |
+|---|---|---:|---:|
+| **ATM** | no hedge | +7.4% / −9.2% / $12.1k | +8.7% / −13.4% / $14.6k, max 1.5 lots |
+| ATM | daily delta, all trades | +1.1% / −2.2% / $1.6k | +1.5% / −2.4% / $2.2k, max 0.6 |
+| ATM | **daily delta, only after a RED candle** | **+4.1% / −4.8% / $6.2k** | +5.1% / −8.1% / $8.0k, max 2.2 |
+| ATM | −10% then daily delta, all trades | +4.5% / −11.9% / $7.0k | +7.4% / −46.1% / $12.0k, max 4.8 |
+| ATM | −10% then daily delta, RED only | +5.7% / −9.5% / $9.0k | +7.7% / −24.4% / $12.7k, max 4.1 |
+| **10% OTM** | no hedge | +4.0% / −6.1% / $6.2k | +4.6% / −6.1% / $7.2k, max 1.1 |
+| 10% OTM | daily delta, all trades | +1.1% / −1.1% / $1.6k | +1.4% / −1.2% / $2.1k, max 0.5 |
+| 10% OTM | **daily delta, only after a RED candle** | **+2.6% / −2.1% / $3.8k** | +2.9% / −2.1% / $4.4k, max 0.5 |
+| 10% OTM | −10% then daily delta, all trades | +2.3% / −5.0% / $3.4k | +3.3% / −14.8% / $5.1k, max 2.7 |
+| 10% OTM | −10% then daily delta, RED only | +3.3% / −3.8% / $5.0k | +4.0% / −11.6% / $6.1k, max 1.8 |
+
+**Year by year, fixed 0.25 lots:**
+
+| | 2022 | 2023 | 2024 | 2025 | 2026 (to 10 Nov) |
+|---|---:|---:|---:|---:|---:|
+| ATM, no hedge | −1.8% | +7.0% | +12.1% | +11.4% | +6.9% |
+| ATM, daily delta after RED | −3.1% | +5.3% | +7.5% | +7.1% | +2.8% |
+| 10% OTM, no hedge | +1.7% | +2.9% | +6.8% | +4.4% | +3.2% |
+| 10% OTM, daily delta after RED | +1.0% | +2.4% | +5.0% | +2.0% | +1.8% |
+
+**What the numbers say**
+* **Delta hedging every trade removes most of the edge.**
+  * ATM: the puts made $12.1k and the hedge lost $10.5k.
+  * The filter's profit came mostly from BTC **not** continuing in the same direction after a big month. A full delta hedge removes direction and leaves only the small volatility premium, about +1% a year.
+* **Hedging only after a RED candle is the useful middle ground.** After a big green month BTC rarely crashed, so those trades stay naked and keep the upside. After a big red month, the risk is a June-2022-style continuation, so those trades are hedged. That halves the drawdown, at the cost of about 3 points of CAGR at ATM.
+* **ATM vs 10% OTM.**
+  * ATM earns more but has bigger swings: win rate 79% unhedged, 59% hedged after red.
+  * 10% OTM is calmer: win rate 97% unhedged, 79% hedged after red.
+  * 10% OTM with daily delta after red had the best return per unit of drawdown: +2.6% / −2.1%.
+* **Recovery sizing.** With daily delta hedging it adds only +0.3 to +1 point of CAGR, and the size stays small (0.5–2.2 lots). With "−10% then delta" it is dangerous: drawdown up to −46% and 4.8 lots. Recommendation: fixed size, or the recovery rule capped at 1 lot.
+
+**Hedge size.** The put delta at entry was about **0.47 for ATM** (0.41–0.54) and **0.22 for 10% OTM** (0.14–0.32). So for 0.25 lots the first hedge is a short of about **0.12 BTC (ATM)** or **0.055 BTC (10% OTM)** on the BTC-PERPETUAL.
+
+Trade list: [`results/playbook_monthly_delta_trades.csv`](results/playbook_monthly_delta_trades.csv). All variants: [`results/playbook_monthly_delta.csv`](results/playbook_monthly_delta.csv).
+
+### Step-by-step instructions
+
+1. **When:** every Deribit monthly expiry, the last Friday of the month at 08:00 UTC. Act shortly after 08:00 UTC.
+2. **Measure the last candle.**
+   * Look up the BTC delivery price at this expiry (Deribit → Delivery prices, btc_usd) and the one at the previous monthly expiry.
+   * `move = today ÷ previous − 1`.
+3. **Decide.**
+   * `|move| ≤ 10%`: **no put this month.** Stay in cash, or buy an ATM straddle (Part 6).
+   * `|move| > 10%`: **sell 1 put** expiring at the next monthly expiry.
+4. **Strike.**
+   * ATM: the listed strike nearest today's price.
+   * 10% OTM: the listed strike nearest 0.90 × today's price.
+5. **Size.** 0.25 BTC. Deribit trades in 0.1 BTC steps, so use 0.2 or 0.3. Optional recovery: `0.25 + unrecovered loss ÷ premium per BTC`, **capped at 1 BTC**.
+6. **Hedge, only if the move was DOWN (red candle).**
+   * Short BTC-PERPETUAL = put delta × size (about 0.12 BTC for ATM, 0.055 BTC for 10% OTM at 0.25 lots).
+   * **Every day at 08:00 UTC**, read the put's delta on Deribit and adjust the perp short to `delta × size`.
+   * Close the perp at the 08:00 UTC expiry.
+   * If the move was UP (green candle): no hedge.
+7. **At expiry** the put settles automatically. Go back to step 2.
+8. **Collateral.**
+   * Keep enough to cover strike × size: about $19.5k for 0.25 ATM at a BTC price of $78k.
+   * Prefer USDC-settled options/margin where available, so collateral doesn't shrink when BTC falls.
+   * Never run more than 1 lot with recovery sizing.
+
+**Where we are now (10 Nov 2026).**
+* At the 30 Oct 2026 expiry the October candle was 78,119 vs 83,931 (−6.9%), a small candle. So **no put this month**.
+* **Next decision: Friday 27 Nov 2026, 08:00 UTC.** Sell a put only if the delivery price is **below 70,307** (−10%, red: also delta-hedge) or **above 85,931** (+10%, green: no hedge). In between, skip.
+
 ## Reproduce
 
 ```bash
@@ -491,6 +562,7 @@ python3 report_cagr.py       # Part 3: CAGR / max DD % / yearly returns on a $30
 python3 report_spread.py     # bid/ask sensitivity (1 tick below mark)
 python3 candle_patterns.py   # Part 5: last-candle patterns, filter rules, permutation tests
 python3 candle_combo.py prefetch && python3 candle_combo.py && python3 candle_combo.py detail   # Part 6
+python3 playbook_monthly_delta.py   # Playbook: monthly big-candle puts + delta hedge, ATM vs 10% OTM
 ```
 
 Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.

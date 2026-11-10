@@ -1,0 +1,21 @@
+strike,hedge,sizing,trades,total P&L $,CAGR,max DD %,max DD date,win rate,worst trade $,best trade $,max size (lots),max notional $,hedge P&L $,hedge fees $,hedged trades
+ATM,no hedge,fixed 0.25 lots,29,12084,0.0741,-0.0925,2022-06-19,0.7931,-1465,1312,0.2500,26250,0,0,0
+ATM,no hedge,recovery rule,29,14588,0.0873,-0.1345,2022-07-02,0.7931,-2286,3102,1.5000,31500,0,0,0
+ATM,"daily delta, all trades",fixed 0.25 lots,29,1589,0.0110,-0.0222,2022-06-24,0.6552,-480,490,0.2500,26250,-10495,470,29
+ATM,"daily delta, all trades",recovery rule,29,2227,0.0152,-0.0241,2022-06-24,0.6552,-480,490,0.5700,28200,-10341,542,29
+ATM,"daily delta, RED-candle trades only",fixed 0.25 lots,29,6210,0.0405,-0.0480,2024-04-18,0.5862,-480,1312,0.2500,26250,-5875,198,13
+ATM,"daily delta, RED-candle trades only",recovery rule,29,8000,0.0512,-0.0810,2022-08-22,0.5862,-697,1598,2.1600,34560,-7042,333,13
+ATM,"-10% then daily delta, all trades",fixed 0.25 lots,29,7010,0.0454,-0.1192,2024-10-12,0.6207,-1065,1312,0.2500,26250,-5075,105,9
+ATM,"-10% then daily delta, all trades",recovery rule,29,11983,0.0736,-0.4609,2024-10-12,0.6207,-5959,13509,4.8000,273600,-27070,392,9
+ATM,"-10% then daily delta, RED only",fixed 0.25 lots,29,8969,0.0568,-0.0955,2024-10-03,0.6552,-1065,1312,0.2500,26250,-3115,52,5
+ATM,"-10% then daily delta, RED only",recovery rule,29,12699,0.0774,-0.2439,2024-10-03,0.6552,-2324,4614,4.1400,100100,-9289,150,5
+10% OTM,no hedge,fixed 0.25 lots,29,6167,0.0403,-0.0608,2022-06-19,0.9655,-993,582,0.2500,23750,0,0,0
+10% OTM,no hedge,recovery rule,29,7171,0.0463,-0.0608,2022-06-19,0.9655,-993,1310,1.0700,23750,0,0,0
+10% OTM,"daily delta, all trades",fixed 0.25 lots,29,1587,0.0110,-0.0109,2022-06-24,0.7241,-249,456,0.2500,23750,-4580,209,29
+10% OTM,"daily delta, all trades",recovery rule,29,2095,0.0144,-0.0119,2024-09-06,0.7241,-249,565,0.4800,27720,-5149,239,29
+10% OTM,"daily delta, RED-candle trades only",fixed 0.25 lots,29,3816,0.0256,-0.0206,2024-04-18,0.7931,-249,582,0.2500,23750,-2351,93,13
+10% OTM,"daily delta, RED-candle trades only",recovery rule,29,4415,0.0294,-0.0205,2024-04-18,0.7931,-249,582,0.4800,27720,-2684,104,13
+10% OTM,"-10% then daily delta, all trades",fixed 0.25 lots,29,3439,0.0232,-0.0498,2024-10-12,0.7586,-484,420,0.2500,23750,-2728,77,9
+10% OTM,"-10% then daily delta, all trades",recovery rule,29,5050,0.0334,-0.1479,2024-10-12,0.7586,-2554,4468,2.7100,233060,-8322,158,9
+10% OTM,"-10% then daily delta, RED only",fixed 0.25 lots,29,4950,0.0328,-0.0379,2024-10-03,0.8276,-484,582,0.2500,23750,-1217,34,5
+10% OTM,"-10% then daily delta, RED only",recovery rule,29,6128,0.0400,-0.1161,2024-10-03,0.8276,-1007,1744,1.7500,103250,-2910,56,5
