@@ -6,6 +6,8 @@ Builds on backtest.py (same Deribit option data, strikes, fees and recovery
 sizing) and adds:
 
 * Tenor
+    1W  - every Friday (Deribit weekly expiry, 08:00 UTC), sell the put expiring
+          the next Friday (7 days), hold to expiry, repeat
     1M  - every monthly expiry, sell the put expiring at the next monthly expiry
     3M  - every quarterly expiry (Mar/Jun/Sep/Dec), sell the put expiring at the
           next quarterly expiry (~3 months), hold to expiry, repeat
@@ -197,6 +199,24 @@ def implied_vol(price, s, k, t):
 # --------------------------------------------------------------------------- #
 # Cycles (entry -> expiry), per 1 lot
 # --------------------------------------------------------------------------- #
+def load_friday_puts() -> pd.DataFrame:
+    """All weekly + monthly BTC puts (every Friday 08:00 UTC) from Dec 2021."""
+    path = os.path.join(DATA, "weekly_btc_puts.csv")
+    if not os.path.exists(path):
+        rows = []
+        for base, expired in ((bt.HIST_API, "true"), (bt.MAIN_API, "false")):
+            for x in bt.get(base, "get_instruments", currency="BTC", kind="option", expired=expired):
+                if x["option_type"] == "put" and x["settlement_period"] in ("week", "month"):
+                    rows.append(dict(instrument=x["instrument_name"], strike=x["strike"],
+                                     expiry=pd.to_datetime(x["expiration_timestamp"], unit="ms"),
+                                     created=pd.to_datetime(x["creation_timestamp"], unit="ms")))
+        df = pd.DataFrame(rows).drop_duplicates("instrument")
+        df = df[(df.expiry >= bt.START) & (df.expiry.dt.hour == 8) & (df.expiry.dt.minute == 0)
+                & (df.expiry.dt.dayofweek == 4)]
+        df.sort_values(["expiry", "strike"]).to_csv(path, index=False)
+    return pd.read_csv(path, parse_dates=["expiry", "created"])
+
+
 def cycle_expiries(inst: pd.DataFrame, tenor: str) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     exps = [pd.Timestamp(e) for e in sorted(inst.expiry.unique())]
     if tenor == "3M":
@@ -286,6 +306,7 @@ def run_cycle(c, q, s0, t0, t1, px, perp, dvol, fund, hedge):
     path = pd.Series(mtm, index=hours)
     return dict(
         entry=t0, expiry=t1, instrument=c.instrument, strike=k, spot_entry=s0, iv_entry=iv0,
+        otm_actual=1 - k / s0,
         prem_usd=prem, fee_entry=fee_entry, spot_expiry=st, settled=settled,
         option_pnl=float(prem - fee_entry - opt_val[-1]), hedge_pnl=float(hedge_cum[-1]),
         hedge_fees=hedge_fees, hedge_turnover_btc=turnover,
@@ -334,13 +355,15 @@ def stats(trades: pd.DataFrame, eq: pd.Series) -> dict:
 
 
 def main() -> None:
-    inst = bt.load_instruments()
+    inst_m = bt.load_instruments()
+    inst_w = load_friday_puts()
     px = bt.load_delivery_prices()
     print("Loading hourly perp / DVOL / funding ...")
     perp, dvol, fund = load_perp_1h(), load_dvol_1h(), load_funding_1h()
     print(f"  perp {perp.index.min()} -> {perp.index.max()}  ({len(perp)} h)")
     summary, all_trades, equity = [], [], {}
-    for tenor in ("1M", "3M"):
+    for tenor in ("1W", "1M", "3M"):
+        inst = inst_w if tenor == "1W" else inst_m
         pairs = cycle_expiries(inst, tenor)
         for otm in OTM_LEVELS:
             label = "ATM" if otm == 0 else f"{int(otm * 100)}% OTM"

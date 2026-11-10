@@ -14,6 +14,7 @@ import pandas as pd  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "results")
 STRIKES = ["ATM", "5% OTM", "10% OTM", "15% OTM"]
+TENORS = ("1W", "1M", "3M")
 HEDGES = ["none", "stop-10% hold", "stop-10%/-5%", "delta-daily", "delta@-10%"]
 HEDGE_LABEL = {"none": "no hedge", "stop-10% hold": "full hedge at -10%, hold",
                "stop-10%/-5%": "full hedge at -10%, off at -5%",
@@ -32,7 +33,7 @@ def k(x: float) -> str:
 
 def table(sizing: str) -> str:
     lines = []
-    for tenor in ("1M", "3M"):
+    for tenor in TENORS:
         hdr = f"| {tenor} | " + " | ".join(HEDGE_LABEL[h] for h in HEDGES) + " |"
         lines += [hdr, "|---|" + "---:|" * len(HEDGES)]
         for st in STRIKES:
@@ -60,8 +61,8 @@ plt.rcParams.update({
 
 
 def chart(sizing: str, fname: str, title: str, floor_k: float | None = None) -> None:
-    fig, axes = plt.subplots(2, 4, figsize=(16, 7.5), sharex=True)
-    for row, tenor in enumerate(("1M", "3M")):
+    fig, axes = plt.subplots(len(TENORS), 4, figsize=(16, 11), sharex=True)
+    for row, tenor in enumerate(TENORS):
         for col, st in enumerate(STRIKES):
             ax = axes[row, col]
             for h in HEDGES:
@@ -93,7 +94,7 @@ def chart(sizing: str, fname: str, title: str, floor_k: float | None = None) -> 
 
 
 chart("fixed", "hedged_equity_fixed.png",
-      "Equity (daily mark-to-market), fixed 0.25 lots: 1-month vs 3-month puts, with and without hedging")
+      "Equity (daily mark-to-market), fixed 0.25 lots: weekly vs 1-month vs 3-month puts, with and without hedging")
 chart("base+cover", "hedged_equity_recovery.png",
-      "Equity (daily mark-to-market), your recovery sizing: 1-month vs 3-month puts, with and without hedging",
+      "Equity (daily mark-to-market), your recovery sizing: weekly vs 1-month vs 3-month puts, with and without hedging",
       floor_k=-40)

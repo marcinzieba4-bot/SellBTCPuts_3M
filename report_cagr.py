@@ -78,7 +78,7 @@ def pct(x: float) -> str:
 def main_table(sizing: str, hedges=("none", "delta-daily")) -> str:
     out = ["| Tenor | Strike | " + " | ".join(f"{h}: total P&L | CAGR | max DD" for h in hedges) + " |",
            "|---|---|" + "---:|---:|---:|" * len(hedges)]
-    for tenor in ("1M", "3M"):
+    for tenor in ("1W", "1M", "3M"):
         for st in STRIKES:
             cells = []
             for h in hedges:
