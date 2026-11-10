@@ -11,11 +11,16 @@ sizing) and adds:
           next quarterly expiry (~3 months), hold to expiry, repeat
 * Hedging with the BTC-PERPETUAL (hourly prices, real funding, 0.05% taker fee)
     none        - naked short put
-    stop-10%    - stop order: when BTC trades 10% below the entry price, short
-                  1 BTC per lot sold (full hedge); buy it back with a stop when
-                  BTC goes back above that level; can re-trigger any number of
-                  times. Simulated on 1-minute bars: fills at the trigger level
-                  (or worse if price gapped through) +/-0.1% slippage + fees
+    stop-10% hold   - stop order: when BTC trades 10% below the entry price,
+                      short 1 BTC per lot sold (full hedge) and keep it to expiry
+    stop-10%/-5%    - same, but buy the hedge back if BTC recovers to -5% from
+                      entry; can re-trigger any number of times
+    stop-10% naive  - same, but buy back as soon as BTC is back above -10%
+                      (same level) -> gets chopped up by whipsaws; kept only to
+                      show why a band is needed
+                  All stop hedges are simulated on 1-minute bars: fills at the
+                  trigger level (or worse if price gapped through) +/-0.1%
+                  slippage + fees
     delta-daily - delta-neutral from day 1: rebalance the perp short to the
                   put's Black-Scholes delta every day at 08:00 UTC
     delta@-10%  - no hedge until BTC falls 10% below entry, then delta hedge
@@ -40,8 +45,9 @@ import backtest as bt
 
 DATA, OUT = bt.DATA, bt.OUT
 OTM_LEVELS = [0.00, 0.05, 0.10, 0.15]
-HEDGES = ["none", "stop-10%", "delta-daily", "delta@-10%"]
+HEDGES = ["none", "stop-10% hold", "stop-10%/-5%", "stop-10% naive", "delta-daily", "delta@-10%"]
 TRIGGER = 0.10           # selloff that activates the stop / delayed-delta hedge
+UNHEDGE = 0.05           # "stop-10%/-5%": remove the hedge when BTC is back to -5%
 PERP_FEE = 0.0005         # Deribit BTC-PERPETUAL taker fee
 STOP_SLIP = 0.001         # stop orders fill 0.1% beyond the trigger level
 NOW = pd.Timestamp.now(tz="UTC").tz_localize(None).floor("h")
@@ -133,11 +139,12 @@ def load_perp_1m() -> dict:
 _stop_cache: dict = {}
 
 
-def stop_events(t0, t1, trig, hours) -> list[tuple[int, float, float]]:
+def stop_events(t0, t1, trig, off, hours) -> list[tuple[int, float, float]]:
     """Stop-order hedge on 1-minute bars: sell 1 BTC when price trades <= trig,
-    buy back when it trades back > trig. Fill at the trigger level (or the bar
-    open if it gapped through) +/- slippage. Returns (hour bucket, dh, fill)."""
-    key = (t0, t1, round(trig, 6))
+    buy back when it trades back > off (never if off is None). Fill at the
+    level (or the bar open if it gapped through) +/- slippage.
+    Returns (hour bucket, dh, fill)."""
+    key = (t0, t1, round(trig, 6), off and round(off, 6))
     if key not in _stop_cache:
         m = load_perp_1m()
         i0, i1 = np.searchsorted(m["t"], [bt.ms(t0), bt.ms(min(t1, NOW))])
@@ -147,8 +154,8 @@ def stop_events(t0, t1, trig, hours) -> list[tuple[int, float, float]]:
             if not on and l[j] <= trig:
                 ev.append((t[j] + 60_000, -1.0, min(o[j], trig) * (1 - STOP_SLIP)))
                 on = True
-            elif on and h[j] > trig:
-                ev.append((t[j] + 60_000, 1.0, max(o[j], trig) * (1 + STOP_SLIP)))
+            elif on and off is not None and h[j] > off:
+                ev.append((t[j] + 60_000, 1.0, max(o[j], off) * (1 + STOP_SLIP)))
                 on = False
         _stop_cache[key] = ev
     hrs_ms = hours.as_unit("ms").asi8
@@ -230,8 +237,9 @@ def run_cycle(c, q, s0, t0, t1, px, perp, dvol, fund, hedge):
     is_0800 = hours.hour == 8
     trades: list[tuple[int, float, float]] = []
     pos = 0.0
-    if hedge == "stop-10%":
-        for b, dh, f in stop_events(t0, t1, trig, hours):
+    if hedge.startswith("stop"):
+        off = {"stop-10% hold": None, "stop-10%/-5%": s0 * (1 - UNHEDGE), "stop-10% naive": trig}[hedge]
+        for b, dh, f in stop_events(t0, t1, trig, off, hours):
             trades.append((b, dh, f))
             pos += dh
     elif hedge == "delta-daily":
@@ -240,7 +248,7 @@ def run_cycle(c, q, s0, t0, t1, px, perp, dvol, fund, hedge):
                 trades.append((i, -delta[i] - pos, s[i]))
                 pos = -delta[i]
     elif hedge == "delta@-10%":
-        ev = stop_events(t0, t1, trig, hours)
+        ev = stop_events(t0, t1, trig, None, hours)
         if ev:
             b, _, f = ev[0]  # first time BTC trades through the -10% level
             d0 = float(-bs_put_delta(trig, k, tau[b], iv[b]))

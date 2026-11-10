@@ -88,12 +88,126 @@ The largest sizes all came in **July 2022**, after the May and June 2022 crash. 
 | 10% OTM | 70000 P | 0.25 lots | −$62 |
 | 15% / 20% OTM | 66000 P / 62000 P | 0.25 lots | about $0 |
 
+---
+
+## P&L and max drawdown at a glance (1-month puts, no hedge)
+
+* **P&L:** settled months, Jan 2022 – Oct 2026.
+* **"At expiries":** the drawdown counted only on expiry days.
+* **"Daily MTM":** every open put is marked to market every day, so it also includes losses during the month.
+
+| Strike | **Your rule** P&L | max DD at expiries | max DD daily MTM | **Fixed 0.25** P&L | max DD at expiries | max DD daily MTM |
+|---|---:|---:|---:|---:|---:|---:|
+| ATM | **+$25,141** | −$17,147 | **−$31,360** | +$1,845 | −$7,314 | −$7,606 |
+| 5% OTM | **+$18,758** | −$9,548 | **−$13,814** | +$785 | −$4,676 | −$5,440 |
+| 10% OTM | **+$12,924** | −$7,666 | **−$11,828** | +$1,280 | −$3,344 | −$4,488 |
+| 15% OTM | **+$7,683** | −$5,677 | **−$9,516** | +$1,625 | −$2,026 | −$3,247 |
+
+The deepest point for your rule at ATM came at the end of February 2026. A 5-lot recovery position for March had just been opened, and BTC kept falling.
+
+---
+
+## Part 2: 1-month vs 3-month expiry, with and without hedging (`hedged_backtest.py`)
+
+**Variants**
+
+* **Tenor**
+  * **1M:** the same monthly cycle as above (58 settled months).
+  * **3M:** sell a ~3-month put at each quarterly expiry (Mar/Jun/Sep/Dec), hold it to expiry, then sell the next one (19 settled quarters). The 0.25-lot base and the recovery rule are the same, applied once per quarter.
+* **Hedges** use the BTC-PERPETUAL with real hourly prices and real funding (shorts receive funding when it is positive), at a 0.05% taker fee per trade.
+
+| hedge | rule |
+|---|---|
+| no hedge | naked short put |
+| full hedge at −10%, hold | stop order: when BTC trades 10% below the entry price, short **1 BTC per lot** and keep the short until expiry |
+| full hedge at −10%, off at −5% | same, but buy the hedge back if BTC recovers to −5%. It can re-trigger any number of times |
+| delta hedge daily | delta-neutral from day 1: re-hedge to the put's delta every day at 08:00 UTC |
+| delta hedge after −10% | no hedge until BTC trades 10% below entry, then delta-hedge daily until expiry |
+
+* **Stop hedges** are simulated on **1-minute BTC bars**. They fill at the trigger level (or worse if price gapped through it), with 0.1% slippage plus fees.
+* **Daily mark-to-market.** Every open put is marked every day with Black-Scholes. The option's own entry implied vol (backed out of the real Deribit premium) is moved day by day with Deribit's DVOL index. Deltas come from the same model.
+* **"P&L to date"** runs to 10 Nov 2026 and includes the open Nov-26 (1M) and Dec-26 (3M) puts, marked to market.
+
+### Results: P&L to date / max drawdown (daily mark-to-market)
+
+**Your recovery rule** (0.25 lots, sized up to cover losses):
+
+| 1M | no hedge | full hedge at −10%, hold | full hedge at −10%, off at −5% | **delta hedge daily** | delta hedge after −10% |
+|---|---:|---:|---:|---:|---:|
+| ATM | +$24.1k / −$31.4k | +$19.0k / −$699.8k | +$19.0k / −$82.7k | **+$2.3k / −$2.9k** | +$18.9k / −$126.8k |
+| 5% OTM | +$18.4k / −$13.8k | +$14.5k / −$1,437.6k | +$14.5k / −$308.5k | **+$3.4k / −$2.2k** | +$14.5k / −$114.6k |
+| 10% OTM | +$12.8k / −$11.8k | +$15.6k / −$48.6k | +$10.4k / −$514.2k | **+$3.3k / −$1.8k** | +$9.4k / −$41.9k |
+| 15% OTM | +$7.7k / −$9.5k | +$16.3k / −$51.2k | +$12.2k / −$182.0k | **+$2.3k / −$2.5k** | +$5.3k / −$11.6k |
+
+| 3M | no hedge | full hedge at −10%, hold | full hedge at −10%, off at −5% | **delta hedge daily** | delta hedge after −10% |
+|---|---:|---:|---:|---:|---:|
+| ATM | +$10.5k / −$18.2k | +$5.5k / −$55.0k | +$4.4k / −$27.8k | **+$2.7k / −$1.4k** | +$4.0k / −$8.2k |
+| 5% OTM | +$9.3k / −$16.3k | +$6.6k / −$64.9k | +$3.5k / −$46.7k | **+$2.3k / −$1.9k** | +$3.4k / −$7.7k |
+| 10% OTM | +$8.6k / −$13.1k | +$9.8k / −$36.6k | +$4.1k / −$95.7k | **+$2.1k / −$2.2k** | +$2.5k / −$6.2k |
+| 15% OTM | +$8.1k / −$8.5k | +$14.0k / −$73.2k | +$8.8k / −$277.2k | **+$2.0k / −$2.4k** | +$2.3k / −$5.6k |
+
+**Fixed 0.25 lots** (shows the effect of each hedge without any size changes):
+
+| 1M | no hedge | full hedge at −10%, hold | full hedge at −10%, off at −5% | **delta hedge daily** | delta hedge after −10% |
+|---|---:|---:|---:|---:|---:|
+| ATM | +$1.3k / −$7.6k | −$3.5k / −$10.2k | +$0.3k / −$7.9k | **+$1.3k / −$1.6k** | +$1.8k / −$6.5k |
+| 5% OTM | +$0.5k / −$5.4k | −$4.3k / −$10.7k | −$0.5k / −$8.7k | **+$1.7k / −$1.3k** | +$1.8k / −$4.7k |
+| 10% OTM | +$1.2k / −$4.5k | −$3.6k / −$10.7k | +$0.1k / −$8.0k | **+$1.5k / −$1.2k** | +$1.6k / −$2.9k |
+| 15% OTM | +$1.6k / −$3.2k | −$3.2k / −$11.6k | +$0.6k / −$8.2k | **+$0.7k / −$1.3k** | +$0.5k / −$2.1k |
+
+| 3M | no hedge | full hedge at −10%, hold | full hedge at −10%, off at −5% | **delta hedge daily** | delta hedge after −10% |
+|---|---:|---:|---:|---:|---:|
+| ATM | −$1.2k / −$9.5k | −$10.1k / −$14.4k | −$8.8k / −$10.8k | **+$2.4k / −$1.4k** | −$3.5k / −$4.7k |
+| 5% OTM | +$0.7k / −$7.8k | −$8.2k / −$15.1k | −$6.9k / −$9.7k | **+$1.9k / −$1.6k** | −$2.0k / −$4.1k |
+| 10% OTM | +$1.6k / −$6.0k | −$7.3k / −$15.5k | −$6.0k / −$10.5k | **+$1.6k / −$1.7k** | −$1.2k / −$3.4k |
+| 15% OTM | +$3.2k / −$4.2k | −$5.7k / −$16.8k | −$4.3k / −$10.3k | **+$1.6k / −$1.7k** | +$0.0k / −$2.7k |
+
+**Profit per $1 of max drawdown, fixed size.** This ratio doesn't depend on position size, so it is the fair way to compare the hedges:
+
+| | no hedge | hedge at −10%, hold | hedge at −10%, off at −5% | **delta daily** | delta after −10% |
+|---|---:|---:|---:|---:|---:|
+| 1M ATM / 5% / 10% / 15% | 0.17 / 0.09 / 0.26 / 0.49 | < 0 | ≈ 0 | **0.85 / 1.30 / 1.25 / 0.55** | 0.28 / 0.38 / 0.55 / 0.25 |
+| 3M ATM / 5% / 10% / 15% | −0.13 / 0.08 / 0.26 / 0.75 | < 0 | < 0 | **1.78 / 1.18 / 0.96 / 0.99** | < 0 or ≈ 0 |
+
+![Fixed size](results/hedged_equity_fixed.png)
+![Recovery sizing](results/hedged_equity_recovery.png)
+
+Full results: [`results/hedged_summary.csv`](results/hedged_summary.csv), every cycle in [`results/hedged_trades.csv`](results/hedged_trades.csv), daily equity in [`results/hedged_equity_daily.csv`](results/hedged_equity_daily.csv).
+
+### What Part 2 shows
+
+1. **A stop that sells and buys back at the same −10% level destroys the strategy.** On 1-minute data it whipsawed **1,606 times** in 1M (−$49.9k on just 0.25 lots), and lost −$76.8k in 3M. It is kept in the CSV as `stop-10% naive` only as a warning.
+2. **"Full hedge after −10%" loses money in both practical versions,** whether held to expiry or removed at −5%. In 2022–2026 BTC's −10% drops were usually followed by sharp rebounds. A 1-BTC short opened at −10% then lost on the rebound, and those losses were larger than the put losses it prevented. The worst case was the 3M put sold in Sep 2024: it was hedged at about $59k in Oct 2024, then BTC rallied to $95k by the December expiry (−$33k per lot on the hedge).
+3. **Daily delta hedging is the only hedge that clearly works.**
+   * Drawdown falls by **2.5–7×**, to about $1.2–1.7k at 0.25 lots.
+   * P&L stays similar or improves (**3M ATM goes from −$1.2k to +$2.4k**). The exception is 15% OTM, where P&L roughly halves.
+   * It turns the trade into collecting the gap between implied and realised volatility, instead of betting on direction.
+   * It costs about $0.3–1.0k in perp fees over the 5 years at 0.25 lots. These fees are included in the results.
+4. **Delta hedging only after −10% is a weak compromise.** It locks in the loss at the moment it starts. It helps a little in 1M and loses money in 3M.
+5. **Your recovery rule must not be combined with hedges that realise losses.** The stop hedges and the "after −10%" delta hedge create extra losing months that the rule then tries to recover with bigger and bigger sizes. In 1M the size reached **12–517 lots**, with drawdowns of −$12k to −$1.4M. In 3M it reached up to 101 lots, with drawdowns down to −$277k. The naive stop went much further. **With daily delta hedging the rule stays tame:** at most 0.4–1.7 lots and drawdowns of −$1.4k to −$2.9k.
+6. **3M vs 1M, unhedged:** 3M has fewer losing cycles (3–6 of 19 vs 8–19 of 58) but less total profit. It also needs your recovery rule to make money at ATM: fixed-size 3M ATM lost −$1.2k. **3M with a daily delta hedge** had the best profit per $ of drawdown in the whole test: 3M ATM made +$2.4k with a −$1.4k max drawdown.
+
+### How to use these results
+
+* **Don't use a fixed −10% stop as a hedge for short BTC puts.** Either it whipsaws (same-level buy-back) or it gets caught in rebounds (hold, or off at −5%).
+* **If you hedge, delta-hedge daily from day 1 with the perp.** Because the drawdown is 2.5–7× smaller, you can sell a **larger** size for the same risk budget.
+  * Example: 1 lot of **3M ATM, delta-hedged** (4× the base) would have made about **+$9.8k with about −$5.5k max drawdown**.
+  * Unhedged 1M ATM at 0.25 lots made **+$1.3k with −$7.6k**.
+  * Your unhedged recovery rule made +$24.1k but needed a −$31.4k drawdown and up to 6.9 lots.
+* **If you keep your recovery rule,** use it only with daily delta hedging, or with no hedge plus a size cap (Part 1). Never use it with stop-type hedges.
+* **Limits of the delta-hedged results:**
+  * Deltas are model-based (Black-Scholes plus DVOL), and re-hedging is once a day.
+  * A one-day crash still hits the position, and it also loses when implied vol spikes.
+  * The edge is small in dollars (about $150–500 a year per 0.25 lot), so execution costs matter.
+
 ## Reproduce
 
 ```bash
-pip install pandas matplotlib
-python3 backtest.py   # downloads + caches Deribit data in ./data, writes ./results
-python3 report.py     # chart + stress test
+pip install pandas matplotlib scipy
+python3 backtest.py          # Part 1: downloads + caches Deribit data in ./data, writes ./results
+python3 report.py            # Part 1 chart + stress test
+python3 hedged_backtest.py   # Part 2: 1M/3M x hedges (downloads ~25 MB of 1-minute BTC bars once)
+python3 report_hedged.py     # Part 2 tables + charts
 ```
 
-Cached data is committed in `data/`, so reruns only hit the API for anything not cached yet. Delete `data/` to download everything again. Strike levels, base size, fees and the cap are constants at the top of `backtest.py`.
+Cached data is committed in `data/`, except the 1-minute bars, which are re-downloaded. Reruns only hit the API for anything not cached yet. Strike levels, base size, fees, triggers and slippage are constants at the top of `backtest.py` and `hedged_backtest.py`.
